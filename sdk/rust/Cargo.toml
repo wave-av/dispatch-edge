@@ -1,0 +1,14 @@
+[package]
+name = "wave-dispatch"
+version = "0.1.0"
+edition = "2021"
+description = "wave Dispatch — local-first AI router client. Route each request to the cheapest capable model (local-first; escalate to your frontier only when needed). BYO keys + infra."
+license = "MIT"
+repository = "https://github.com/wave-av/dispatch-edge"
+homepage = "https://dispatch.wave.online"
+keywords = ["llm", "routing", "local-first", "dispatch"]
+categories = ["api-bindings"]
+
+[dependencies]
+ureq = "2"
+serde_json = "1"
