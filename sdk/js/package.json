@@ -1,0 +1,15 @@
+{
+  "name": "@wave-av/dispatch",
+  "version": "0.1.0",
+  "description": "wave Dispatch — route each request to the cheapest capable model (local-first; escalate to your frontier model only when needed). BYO keys + infra; we return the routing decision.",
+  "type": "module",
+  "main": "index.js",
+  "exports": "./index.js",
+  "files": ["index.js", "README.md"],
+  "keywords": ["llm", "routing", "local-first", "cost", "edge", "wave", "dispatch", "x402", "agents"],
+  "author": "WAVE Online, LLC",
+  "license": "MIT",
+  "homepage": "https://dispatch.wave.online",
+  "repository": { "type": "git", "url": "git+https://github.com/wave-av/dispatch-edge.git" },
+  "engines": { "node": ">=18" }
+}
