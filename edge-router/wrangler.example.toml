@@ -1,0 +1,11 @@
+name = "wave-dispatch"
+main = "worker.ts"
+compatibility_date = "2025-01-01"
+workers_dev = true
+routes = [{ pattern = "your-domain.example", custom_domain = true }]
+[ai]
+binding = "AI"
+[[kv_namespaces]]
+binding = "LICENSES"
+id = "<your-kv-namespace-id>"
+# secrets (wrangler secret put): ROUTER_TOKEN, STRIPE_WEBHOOK_SECRET, WAVE_EDGE_EXEC(opt), WAVE_VERIFY_URL(opt)
