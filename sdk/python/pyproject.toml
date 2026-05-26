@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wave-dispatch"
+version = "0.1.0"
+description = "wave Dispatch — local-first AI router client. Route each request to the cheapest capable model (local-first; escalate to your frontier only when needed). BYO keys + infra."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [{ name = "WAVE Online, LLC" }]
+keywords = ["llm", "routing", "local-first", "cost", "edge", "dispatch", "agents", "x402"]
+dependencies = []
+
+[project.urls]
+Homepage = "https://dispatch.wave.online"
+Repository = "https://github.com/wave-av/dispatch-edge"
+
+[tool.setuptools]
+packages = ["wave_dispatch"]
