@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	dispatch "github.com/wave-av/dispatch-go"
+	dispatch "github.com/wave-av/dispatch-edge/sdk/go"
 )
 
 func main() {
