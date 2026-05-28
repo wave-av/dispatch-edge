@@ -5,7 +5,8 @@
 **Local-first AI routing.** Send every request to the cheapest *capable* model — your local models first
 ($0, your infra), escalating to a frontier (Claude / GPT / Gemini / …) only when confidence is low.
 
-This repo is **the only code that touches your prompt**, published so you can verify exactly what it does.
+Open for audit — the edge worker, the threat model, and all five client SDKs. The edge returns only a
+routing decision and **logs zero prompt content**; with local-first routing, most requests never leave your infra at all.
 
 [Product](https://dispatch.wave.online) · [Pricing](https://dispatch.wave.online/pricing) · [Playground](https://dispatch.wave.online/playground) · [SDKs](https://dispatch.wave.online/sdks) · [Status](https://dispatch.wave.online/status) · [a WAVE product](https://wave.online)
 
@@ -37,21 +38,28 @@ classifier isn't confident enough.
 ## The trust boundary
 
 ```
-                          THIS REPO (public, MIT)              YOUR INFRA (private)
+                       WAVE EDGE (reference here)            YOUR INFRA (private)
 prompt ──▶ embed @ edge ──▶ classify {route · conf · margin} ──▶ local pool · frontier fallback
            Workers AI         matmul over bundled weights          (your keys, your hardware)
 ```
 
-- `edge-router/worker.ts` — the deployed Cloudflare Worker: classify, meter, rate-limit, x402, edge-exec.
+- `edge-router/worker.ts` — the reference Cloudflare Worker: classify, meter, rate-limit, x402, edge-exec.
 - `edge-router/wrangler.example.toml` — bindings (Workers AI, KV) to run your own copy.
 - `threat-model.md` — security posture and what is / isn't logged.
+- `BENCHMARKS.md` — how the 63–79% savings + cost-aware leaderboard are measured (graders, routing, formula).
 
-**It logs zero prompt content.** The trained weights, local orchestration, and business logic are the
-proprietary part and stay private — but the code that sees your prompt is right here, auditable.
+**What actually touches your prompt — and what doesn't:**
+- The edge **logs zero prompt content** (capped, never persisted — see `threat-model.md`).
+- Most requests are handled by **your local models and never reach the edge** at all.
+- Send `{"vector":[768]}` instead of a prompt (embed client-side) and the **raw prompt never leaves your machine**.
+- Escalations call **your** frontier with **your** keys. We never see your API keys or inference.
 
-### Verify deployed == source
+The deployed build adds proprietary routing weights, local orchestration, and billing (private) — the worker
+here is the faithful reference for the edge's logic, not a byte-for-byte mirror of the deployed binary.
 
-Every deploy embeds its commit. Confirm the running edge is built from this repo:
+### Pinned, attestable builds
+
+Every deploy embeds its commit hash, so you can confirm the edge is running a known, pinned build:
 
 ```bash
 curl -s https://dispatch.wave.online/status?format=json | jq .version
@@ -88,10 +96,18 @@ d = Dispatch()                                              # reads $WAVE_LICENS
 print(d.route("summarize this PR")["route"])
 ```
 
+```bash
+# local-first proxy — point any OpenAI-compatible agent (Codex/Cursor/aider/…) at it
+pip install wave-dispatch
+WAVE_LICENSE=wv_… dispatch serve                            # OpenAI-compatible proxy on :8090
+# then: OPENAI_BASE_URL=http://localhost:8090/v1  → easy turns run on your local models, hard turns escalate
+```
+
 ```
 POST https://dispatch.wave.online/
   Authorization: Bearer <license>            # or none → HTTP 402 x402 payment requirements
   {"prompt": "…"}                            # → {route, probability, margin, forward}
+  {"prompts": ["…", "…"]}                    # batch: ONE embed call for up to 32 prompts → {results:[…]}
   {"prompt": "…", "execute": true}           # run on the edge (if your plan enables it)
   {"vector": [768 floats]}                   # matmul-only — cheapest + fastest
 ```

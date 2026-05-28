@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wave-dispatch"
-version = "0.1.0"
-description = "wave Dispatch — local-first AI router client. Route each request to the cheapest capable model (local-first; escalate to your frontier only when needed). BYO keys + infra."
+version = "0.4.4"
+description = "wave Dispatch — local-first AI router. `dispatch serve` runs an OpenAI-compatible proxy that routes each request to the cheapest capable model (local-first; escalate to your frontier only when needed). BYO keys + infra."
 readme = "README.md"
 requires-python = ">=3.8"
 license = { text = "MIT" }
@@ -16,6 +16,9 @@ dependencies = []
 [project.urls]
 Homepage = "https://dispatch.wave.online"
 Repository = "https://github.com/wave-av/dispatch-edge"
+
+[project.scripts]
+dispatch = "wave_dispatch.cli:main"
 
 [tool.setuptools]
 packages = ["wave_dispatch"]
