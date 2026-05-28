@@ -6,7 +6,7 @@ require "uri"
 require "openssl"
 
 module WaveDispatch
-  VERSION = "0.4.4"
+  VERSION = "0.5.0"
 
   class Client
     def initialize(license = ENV["WAVE_LICENSE"], endpoint: "https://dispatch.wave.online",
