@@ -1,6 +1,6 @@
 {
   "name": "@wave-av/dispatch",
-  "version": "0.1.0",
+  "version": "0.4.4",
   "description": "wave Dispatch — route each request to the cheapest capable model (local-first; escalate to your frontier model only when needed). BYO keys + infra; we return the routing decision.",
   "type": "module",
   "main": "index.js",
