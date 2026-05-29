@@ -9,7 +9,7 @@ import urllib.request
 import urllib.error
 from typing import Callable, Optional, Dict, Any   # CR/#3: py3.8 compat (str | None is py3.10+)
 
-__version__ = "0.5.1"
+__version__ = "0.6.0"
 DEFAULT_ENDPOINT = "https://dispatch.wave.online"
 DEFAULT_AGENTS_ENDPOINT = "https://dispatch-agents.wave.online"   # stateful sidecar: savings ledger + subscriptions
 

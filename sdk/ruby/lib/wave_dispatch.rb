@@ -7,7 +7,7 @@ require "uri"
 require "openssl"
 
 module WaveDispatch
-  VERSION = "0.5.1"
+  VERSION = "0.6.0"
 
   # 0.5.1 — payment hook: a Proc called once with the 402 challenge body (Hash) that returns the
   # headers (Hash[String => String]) to retry the request with. Pair with `Client.wallet_hook(provider:,
