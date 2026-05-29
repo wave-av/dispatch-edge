@@ -50,8 +50,12 @@ export class Dispatch {
    * 0.5.0 — Convenience factory: build a paymentHook that signs each 402 challenge via a wallet provider.
    * @param {object} cfg
    * @param {"cdp"|"privy"|"bridge"|"custom"} cfg.provider
-   * @param {object} [cfg.credentials]  provider-specific (e.g. {apiKey,apiSecret,address} for cdp;
-   *                                     {appId,appSecret,walletId} for privy; {apiKey,...} for bridge)
+   * @param {object} [cfg.credentials]  provider-specific. snake_case is canonical (matches Python/Ruby/
+   *   Go/Rust SDKs and the JWT payload field names that flow into `kid`). camelCase aliases are accepted
+   *   for backward-compat with 0.5.x–0.6.2 JS callers.
+   *     cdp:     `{ api_key, api_secret, address?, network? }`   (aliases: apiKey, apiSecret)
+   *     privy:   `{ app_id, app_secret, wallet_id }`              (aliases: appId, appSecret, walletId)
+   *     bridge:  `{ api_key, source_wallet?, destination? }`      (aliases: apiKey, sourceWallet)
    * @param {Function} [cfg.sign]  for provider:"custom" — your function(challenge) -> headers
    * @param {Function} [cfg.fetchImpl]
    * Returns a paymentHook ready to pass to `new Dispatch(license, { paymentHook })`.
@@ -93,30 +97,48 @@ export class Dispatch {
   }
 }
 
+// 0.6.3 — cred-key normalization. snake_case is canonical (matches the other 4 SDKs + the JWT payload
+// field names that go into `kid`); camelCase is accepted as an alias for 0.5.x–0.6.2 backward-compat.
+// Snake_case wins if both are present, so callers can incrementally migrate without surprises.
+// Single source of truth for the alias map — extend here when new fields land.
+const _CRED_ALIASES = {
+  api_key: "apiKey", api_secret: "apiSecret",
+  app_id: "appId", app_secret: "appSecret", wallet_id: "walletId",
+  source_wallet: "sourceWallet",
+};
+function _normCreds(creds) {
+  const c = { ...(creds || {}) };
+  for (const [snake, camel] of Object.entries(_CRED_ALIASES)) {
+    if (c[snake] == null && c[camel] != null) c[snake] = c[camel];
+  }
+  return c;
+}
+
 // Built-in provider integrations. Each returns the body of the corresponding payment header. The actual
 // on-chain/SDK signing happens at the provider; this layer is HTTP orchestration only.
-async function _walletSign(provider, creds, challenge, fetchImpl) {
+async function _walletSign(provider, credsIn, challenge, fetchImpl) {
   const f = fetchImpl || globalThis.fetch;
+  const creds = _normCreds(credsIn);
   const accepts = Array.isArray(challenge.accepts) ? challenge.accepts : [];
   const accept = accepts.find(a => a.protocol === provider) || accepts[0] || {};
   if (provider === "cdp") {
     // 0.6.0 — real CDP-JWT signing via Web Crypto (replaces the 0.5.x marker payload). creds must
-    // include {apiKey, apiSecret} where apiSecret is the PEM-encoded EC P-256 private key from CDP.
-    // Optional: {address, network, walletId} for downstream WAVE verification. The signed JWT becomes
+    // include {api_key, api_secret} where api_secret is the PEM-encoded EC P-256 private key from CDP.
+    // Optional: {address, network, wallet_id} for downstream WAVE verification. The signed JWT becomes
     // the cdp-payment header value; WAVE's CDP verifier validates the ES256 signature on its side.
-    if (!creds.apiKey || !creds.apiSecret) throw new Error("dispatch.walletHook(cdp): apiKey + apiSecret (PEM EC private key) required");
+    if (!creds.api_key || !creds.api_secret) throw new Error("dispatch.walletHook(cdp): api_key + api_secret (PEM EC private key) required");
     const jwt = await _signCdpJwt(creds, accept);
     return JSON.stringify({ provider: "cdp", jwt, address: creds.address || null, network: creds.network || "base", accept });
   }
   if (provider === "privy") {
-    if (!creds.appId || !creds.appSecret || !creds.walletId)
-      throw new Error("dispatch.walletHook(privy): appId, appSecret, walletId required in credentials");
-    const r = await f(`https://auth.privy.io/api/v1/wallets/${encodeURIComponent(creds.walletId)}/rpc`, {
+    if (!creds.app_id || !creds.app_secret || !creds.wallet_id)
+      throw new Error("dispatch.walletHook(privy): app_id, app_secret, wallet_id required in credentials");
+    const r = await f(`https://auth.privy.io/api/v1/wallets/${encodeURIComponent(creds.wallet_id)}/rpc`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        authorization: "Basic " + btoa(`${creds.appId}:${creds.appSecret}`),
-        "privy-app-id": creds.appId,
+        authorization: "Basic " + btoa(`${creds.app_id}:${creds.app_secret}`),
+        "privy-app-id": creds.app_id,
       },
       body: JSON.stringify({ method: "personal_sign", params: { message: JSON.stringify(accept) }, chain_type: "ethereum" }),
     });
@@ -125,11 +147,11 @@ async function _walletSign(provider, creds, challenge, fetchImpl) {
     return JSON.stringify({ provider: "privy", signature: (j.data && j.data.signature) || j.signature, accept });
   }
   if (provider === "bridge") {
-    if (!creds.apiKey) throw new Error("dispatch.walletHook(bridge): apiKey required");
+    if (!creds.api_key) throw new Error("dispatch.walletHook(bridge): api_key required");
     const r = await f("https://api.bridge.xyz/v0/transfers", {
       method: "POST",
-      headers: { "content-type": "application/json", "api-key": creds.apiKey },
-      body: JSON.stringify({ source: creds.sourceWallet, destination: creds.destination || accept.payTo, amount: accept.maxAmountRequired }),
+      headers: { "content-type": "application/json", "api-key": creds.api_key },
+      body: JSON.stringify({ source: creds.source_wallet, destination: creds.destination || accept.payTo, amount: accept.maxAmountRequired }),
     });
     if (!r.ok) throw new Error(`dispatch.walletHook(bridge): provider ${r.status}`);
     const j = await r.json().catch(() => ({}));
@@ -139,9 +161,10 @@ async function _walletSign(provider, creds, challenge, fetchImpl) {
 }
 
 // CDP-JWT signing (ES256 / P-256) using Web Crypto. The CDP-JWT is the standard Coinbase pattern:
-//   header  = { alg:"ES256", kid:<apiKey>, typ:"JWT", nonce:<random> }
-//   payload = { sub:<apiKey>, iss:"cdp", nbf:<now>, exp:<now+120>, uri:"<METHOD> <host><path>", claim:<accept> }
+//   header  = { alg:"ES256", kid:<api_key>, typ:"JWT", nonce:<random> }
+//   payload = { sub:<api_key>, iss:"cdp", nbf:<now>, exp:<now+120>, uri:"<METHOD> <host><path>", claim:<accept> }
 // PEM decoding handles both BEGIN EC PRIVATE KEY (SEC1) and BEGIN PRIVATE KEY (PKCS8) inputs.
+// `creds` MUST be pre-normalized via _normCreds (snake_case canonical, camelCase aliases coerced).
 async function _signCdpJwt(creds, accept) {
   const enc = new TextEncoder();
   const b64url = (buf) => {
@@ -151,14 +174,14 @@ async function _signCdpJwt(creds, accept) {
   const randHex = (n) => Array.from(crypto.getRandomValues(new Uint8Array(n))).map(b => b.toString(16).padStart(2, "0")).join("");
   const now = Math.floor(Date.now() / 1000);
   const uri = "POST dispatch.wave.online" + (accept && accept.resource ? accept.resource : "/");
-  const header = { alg: "ES256", kid: creds.apiKey, typ: "JWT", nonce: randHex(16) };
-  const payload = { sub: creds.apiKey, iss: "cdp", nbf: now, exp: now + 120, uri, claim: accept || null };
+  const header = { alg: "ES256", kid: creds.api_key, typ: "JWT", nonce: randHex(16) };
+  const payload = { sub: creds.api_key, iss: "cdp", nbf: now, exp: now + 120, uri, claim: accept || null };
   const headerB64 = b64url(JSON.stringify(header));
   const payloadB64 = b64url(JSON.stringify(payload));
   const toSign = headerB64 + "." + payloadB64;
 
   // Import EC private key from PEM. CDP-issued keys are usually PKCS8 ("BEGIN PRIVATE KEY"); also accept SEC1.
-  const pem = String(creds.apiSecret).replace(/-----[A-Z ]+-----/g, "").replace(/\s+/g, "");
+  const pem = String(creds.api_secret).replace(/-----[A-Z ]+-----/g, "").replace(/\s+/g, "");
   const der = Uint8Array.from(atob(pem), c => c.charCodeAt(0));
   let key;
   try {
@@ -168,7 +191,7 @@ async function _signCdpJwt(creds, accept) {
     // (PEM banner string split below to satisfy the repo's secret-scan gate; this is a user-facing
     // error description, not an embedded credential.)
     const banner = "-----BEGIN PRIVATE" + " KEY-----";
-    throw new Error("dispatch.walletHook(cdp): apiSecret must be a PKCS8 PEM private key (" + banner + "). " +
+    throw new Error("dispatch.walletHook(cdp): api_secret must be a PKCS8 PEM private key (" + banner + "). " +
                     "If you have a SEC1 key, convert with: openssl pkcs8 -topk8 -nocrypt -in sec1.pem -out pkcs8.pem");
   }
   const sig = new Uint8Array(await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, key, enc.encode(toSign)));
@@ -177,7 +200,8 @@ async function _signCdpJwt(creds, accept) {
 }
 
 // Expose for power users who want to drive CDP themselves (e.g. signing custom request URIs) without
-// the walletHook orchestration.
-Dispatch.signCdpJwt = _signCdpJwt;
+// the walletHook orchestration. Accepts the same creds shape as walletHook(cdp,...) — snake_case
+// canonical, camelCase aliases coerced via _normCreds.
+Dispatch.signCdpJwt = (creds, accept) => _signCdpJwt(_normCreds(creds), accept);
 
 export default Dispatch;

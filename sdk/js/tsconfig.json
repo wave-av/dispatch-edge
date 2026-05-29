@@ -1,0 +1,17 @@
+{
+  "//": "Typecheck-only config for the published types. Validates index.d.ts (strict) and that the",
+  "//checkJs": "JSDoc in index.js stays consistent. No emit — the package ships hand-written .js + .d.ts.",
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "allowJs": true,
+    "checkJs": false,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "skipLibCheck": false,
+    "types": []
+  },
+  "files": ["index.d.ts"]
+}

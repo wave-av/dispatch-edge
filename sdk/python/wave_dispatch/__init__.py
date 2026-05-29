@@ -9,7 +9,7 @@ import urllib.request
 import urllib.error
 from typing import Callable, Optional, Dict, Any   # CR/#3: py3.8 compat (str | None is py3.10+)
 
-__version__ = "0.6.0"
+__version__ = "0.6.2"
 DEFAULT_ENDPOINT = "https://dispatch.wave.online"
 DEFAULT_AGENTS_ENDPOINT = "https://dispatch-agents.wave.online"   # stateful sidecar: savings ledger + subscriptions
 
@@ -141,11 +141,15 @@ def _wallet_sign(provider: str, creds: dict, challenge: dict) -> str:
     accepts = challenge.get("accepts") or []
     accept = next((a for a in accepts if a.get("protocol") == provider), accepts[0] if accepts else {})
     if provider == "cdp":
-        # CDP-JWT signing is non-trivial in stdlib-only Python. Recommended: provider="custom" with the
-        # `coinbase-cdp-sdk` package. We return a marker; the worker (WAVE_VERIFY_URL + WAVE_CDP=1)
-        # delegates verification to WAVE's CDP service.
-        return json.dumps({"provider": "cdp", "address": creds.get("address"), "accept": accept,
-                           "hint": "use coinbase-cdp-sdk for CDP-JWT signing in production"})
+        # 0.6.1 — real CDP-JWT (ES256/P-256) signing when `cryptography` is available; falls back to a
+        # marker payload otherwise. Install with: pip install wave-dispatch[cdp].
+        # creds: { api_key, api_secret (PEM PKCS8 EC private key), address?, network? }
+        for k in ("api_key", "api_secret"):
+            if not creds.get(k):
+                raise ValueError("dispatch.wallet_hook(cdp): " + k + " required")
+        jwt = _sign_cdp_jwt(creds, accept)
+        return json.dumps({"provider": "cdp", "jwt": jwt, "address": creds.get("address"),
+                           "network": creds.get("network") or "base", "accept": accept})
     if provider == "privy":
         for k in ("app_id", "app_secret", "wallet_id"):
             if not creds.get(k):
@@ -179,3 +183,54 @@ def _wallet_sign(provider: str, creds: dict, challenge: dict) -> str:
             raise RuntimeError("dispatch.wallet_hook(bridge): provider " + str(e.code)) from e
         return json.dumps({"provider": "bridge", "id": j.get("id"), "accept": accept})
     raise ValueError("dispatch._wallet_sign: unsupported provider " + str(provider))
+
+
+def _sign_cdp_jwt(creds: dict, accept: Optional[dict]) -> str:
+    """0.6.1 — CDP-JWT (ES256/P-256) signing. Requires the `cryptography` package
+    (install with `pip install wave-dispatch[cdp]`). Without it, raises RuntimeError pointing the user
+    at the optional dependency or the `provider='custom'` escape hatch.
+
+    Header: {alg:'ES256', kid:<api_key>, typ:'JWT', nonce:<rand-hex16>}
+    Payload: {sub:<api_key>, iss:'cdp', nbf:<now>, exp:<now+120>, uri:'POST dispatch.wave.online<resource>', claim:<accept>}
+    Signature: ECDSA over base64url(header).base64url(payload), output as 64-byte r||s (IEEE P-1363),
+               base64url-encoded — matches JWS ES256 spec exactly.
+    """
+    try:
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import ec
+        from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
+    except ImportError as e:
+        raise RuntimeError("dispatch.wallet_hook(cdp): real CDP-JWT signing needs `cryptography` "
+                           "(install with: pip install wave-dispatch[cdp]). Or pass provider='custom' "
+                           "and supply your own sign(challenge) -> headers using the official "
+                           "coinbase-cdp-sdk package.") from e
+    import os as _os, secrets as _secrets, time as _time
+
+    def b64url(data) -> str:
+        if isinstance(data, str):
+            data = data.encode()
+        return base64.urlsafe_b64encode(data).decode().rstrip("=")
+
+    now = int(_time.time())
+    uri = "POST dispatch.wave.online" + ((accept or {}).get("resource") or "/")
+    header = {"alg": "ES256", "kid": creds["api_key"], "typ": "JWT", "nonce": _secrets.token_hex(16)}
+    payload = {"sub": creds["api_key"], "iss": "cdp", "nbf": now, "exp": now + 120, "uri": uri, "claim": accept}
+    to_sign = b64url(json.dumps(header, separators=(",", ":"))) + "." + b64url(json.dumps(payload, separators=(",", ":")))
+
+    # Parse PEM PKCS8. cryptography handles both PKCS8 and SEC1 PEMs transparently.
+    try:
+        key = serialization.load_pem_private_key(creds["api_secret"].encode(), password=None)
+    except Exception as e:
+        raise RuntimeError("dispatch.wallet_hook(cdp): could not parse api_secret as a PEM EC private key (" + str(e) + ")") from e
+    if not isinstance(key, ec.EllipticCurvePrivateKey):
+        raise RuntimeError("dispatch.wallet_hook(cdp): api_secret must be an EC P-256 private key")
+    der_sig = key.sign(to_sign.encode(), ec.ECDSA(hashes.SHA256()))
+    # cryptography returns DER-encoded (r,s); JWS ES256 expects raw 64-byte r||s (32+32 for P-256).
+    r, s = decode_dss_signature(der_sig)
+    raw_sig = r.to_bytes(32, "big") + s.to_bytes(32, "big")
+    return to_sign + "." + b64url(raw_sig)
+
+
+# Expose for power users who want to drive CDP themselves (e.g. signing custom request URIs) without
+# the wallet_hook orchestration.
+Dispatch.sign_cdp_jwt = staticmethod(_sign_cdp_jwt)
