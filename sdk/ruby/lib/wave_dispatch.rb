@@ -7,7 +7,7 @@ require "uri"
 require "openssl"
 
 module WaveDispatch
-  VERSION = "0.6.0"
+  VERSION = "0.6.3"
 
   # 0.5.1 — payment hook: a Proc called once with the 402 challenge body (Hash) that returns the
   # headers (Hash[String => String]) to retry the request with. Pair with `Client.wallet_hook(provider:,
@@ -94,11 +94,14 @@ module WaveDispatch
     accept = accepts.find { |a| a.is_a?(Hash) && a["protocol"] == provider.to_s } || accepts.first || {}
     case provider
     when :cdp
-      # CDP-JWT signing is non-trivial in stdlib-only Ruby; the built-in returns a marker payload that
-      # the worker accepts via the wave-payments adapter when WAVE_VERIFY_URL is set. For full on-chain
-      # CDP signing, build your own Proc with the official Coinbase CDP gem.
-      { provider: "cdp", address: creds[:address], accept: accept,
-        hint: "use the coinbase-cdp gem for CDP-JWT signing in production" }.to_json
+      # 0.6.2 — real CDP-JWT (ES256/P-256) signing via OpenSSL stdlib. creds: {api_key, api_secret (PEM EC),
+      # address?, network?}. The signed JWT is the cdp-payment header value; WAVE's CDP verifier validates
+      # the signature on its side. No optional dep needed — Ruby's stdlib OpenSSL handles everything.
+      raise "dispatch.wallet_hook(cdp): api_key required" unless creds[:api_key]
+      raise "dispatch.wallet_hook(cdp): api_secret required (PEM EC private key)" unless creds[:api_secret]
+      jwt = WaveDispatch.sign_cdp_jwt(creds, accept)
+      { provider: "cdp", jwt: jwt, address: creds[:address],
+        network: creds[:network] || "base", accept: accept }.to_json
     when :privy
       %i[app_id app_secret wallet_id].each { |k| raise "dispatch.wallet_hook(privy): #{k} required" unless creds[k] }
       basic = Base64.strict_encode64("#{creds[:app_id]}:#{creds[:app_secret]}")
@@ -126,5 +129,30 @@ module WaveDispatch
     else
       raise "dispatch.wallet_sign: unsupported provider #{provider.inspect}"
     end
+  end
+
+  # 0.6.2 — CDP-JWT (ES256/P-256) signing via OpenSSL stdlib. Header:
+  # {alg:'ES256', kid:<api_key>, typ:'JWT', nonce:<rand-hex16>}. Payload: {sub:<api_key>, iss:'cdp',
+  # nbf:<now>, exp:<now+120>, uri:'POST dispatch.wave.online<resource>', claim:<accept>}.
+  # ECDSA signs the base64url(header).base64url(payload) input; the DER signature is unpacked to raw
+  # 32+32 r||s (IEEE P-1363), which is exactly what JWS ES256 expects.
+  def self.sign_cdp_jwt(creds, accept)
+    require "openssl"
+    require "securerandom"
+    nonce = SecureRandom.hex(16)
+    now = Time.now.to_i
+    uri = "POST dispatch.wave.online#{(accept || {})["resource"] || "/"}"
+    header = { alg: "ES256", kid: creds[:api_key], typ: "JWT", nonce: nonce }
+    payload = { sub: creds[:api_key], iss: "cdp", nbf: now, exp: now + 120, uri: uri, claim: accept }
+    b64url = ->(s) { Base64.urlsafe_encode64(s).gsub("=", "") }
+    to_sign = b64url.call(header.to_json) + "." + b64url.call(payload.to_json)
+    key = OpenSSL::PKey.read(creds[:api_secret])
+    raise "dispatch.wallet_hook(cdp): api_secret must be an EC P-256 private key" unless key.is_a?(OpenSSL::PKey::EC)
+    der_sig = key.sign(OpenSSL::Digest.new("SHA256"), to_sign)
+    # DER → raw r||s. OpenSSL ASN1 parses the SEQUENCE into [r, s] big-integers.
+    asn1 = OpenSSL::ASN1.decode(der_sig)
+    r = asn1.value[0].value.to_s(2).rjust(32, "\x00".b)
+    s = asn1.value[1].value.to_s(2).rjust(32, "\x00".b)
+    to_sign + "." + b64url.call(r + s)
   end
 end

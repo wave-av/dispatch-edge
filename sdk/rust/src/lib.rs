@@ -3,6 +3,38 @@
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::error::Error;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+/// 0.6.2 — CDP-JWT (ES256/P-256) signer. Uses the `p256` crate (added to dependencies). Pure Rust;
+/// no openssl FFI. Header: {alg:'ES256', kid:<api_key>, typ:'JWT', nonce:<rand-hex16>}. Payload:
+/// {sub:<api_key>, iss:'cdp', nbf:<now>, exp:<now+120>, uri:'POST dispatch.wave.online<resource>', claim:<accept>}.
+/// p256's ECDSA signer returns r||s as a Signature; we serialize to raw 32+32 (IEEE P-1363) — the JWS
+/// ES256 spec representation — then base64url-encode the three parts.
+pub fn sign_cdp_jwt(api_key: &str, pem_secret: &str, accept: &Value) -> Result<String, Box<dyn Error>> {
+    use base64::Engine;
+    use p256::ecdsa::{signature::Signer, Signature, SigningKey};
+    use p256::pkcs8::DecodePrivateKey;
+
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0) as i64;
+    // 16 random bytes → 32 hex chars (uses rand from p256/sec1 transitive)
+    let mut nonce_bytes = [0u8; 16];
+    {
+        use rand_core::{OsRng, RngCore};
+        OsRng.fill_bytes(&mut nonce_bytes);
+    }
+    let nonce = nonce_bytes.iter().fold(String::with_capacity(32), |mut s, b| { use std::fmt::Write; let _ = write!(s, "{:02x}", b); s });
+    let resource = accept.get("resource").and_then(|v| v.as_str()).unwrap_or("/");
+    let uri = format!("POST dispatch.wave.online{}", resource);
+    let header = json!({ "alg": "ES256", "kid": api_key, "typ": "JWT", "nonce": nonce });
+    let payload = json!({ "sub": api_key, "iss": "cdp", "nbf": now, "exp": now + 120, "uri": uri, "claim": accept });
+    let b64 = |s: &[u8]| base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(s);
+    let to_sign = format!("{}.{}", b64(header.to_string().as_bytes()), b64(payload.to_string().as_bytes()));
+
+    let key = SigningKey::from_pkcs8_pem(pem_secret)
+        .map_err(|e| format!("dispatch::sign_cdp_jwt: PEM parse failed ({}); api_secret must be a PKCS8 EC P-256 private key", e))?;
+    let sig: Signature = key.sign(to_sign.as_bytes());
+    Ok(format!("{}.{}", to_sign, b64(sig.to_bytes().as_slice())))
+}
 
 /// 0.5.1 — payment hook: called once with the 402 challenge body, returns headers to retry the
 /// request with (e.g. `{"x-payment": "..."}` for x402, `{"tempo-payment": "..."}` for tempo). Pair with
@@ -157,12 +189,19 @@ fn wallet_sign(provider: &str, creds: &HashMap<String, String>, challenge: &Valu
         .unwrap_or(Value::Null);
 
     match provider {
-        "cdp" => Ok(json!({
-            "provider": "cdp",
-            "address": creds.get("address"),
-            "accept": accept,
-            "hint": "use the official Coinbase Rust SDK for CDP-JWT signing in production"
-        }).to_string()),
+        "cdp" => {
+            // 0.6.2 — real CDP-JWT (ES256/P-256) signing via the `p256` crate (added to deps).
+            let api_key = creds.get("api_key").ok_or("dispatch::wallet_hook(cdp): api_key required")?;
+            let api_secret = creds.get("api_secret").ok_or("dispatch::wallet_hook(cdp): api_secret required (PEM EC private key)")?;
+            let jwt = sign_cdp_jwt(api_key, api_secret, &accept)?;
+            Ok(json!({
+                "provider": "cdp",
+                "jwt": jwt,
+                "address": creds.get("address"),
+                "network": creds.get("network").map(|s| s.as_str()).unwrap_or("base"),
+                "accept": accept
+            }).to_string())
+        },
         "privy" => {
             let app_id = creds.get("app_id").ok_or("dispatch::wallet_hook(privy): app_id required")?;
             let app_secret = creds.get("app_secret").ok_or("dispatch::wallet_hook(privy): app_secret required")?;

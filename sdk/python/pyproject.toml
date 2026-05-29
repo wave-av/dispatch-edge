@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wave-dispatch"
-version = "0.6.0"
+version = "0.6.3"
 description = "wave Dispatch — local-first AI router. `dispatch serve` runs an OpenAI-compatible proxy that routes each request to the cheapest capable model (local-first; escalate to your frontier only when needed). BYO keys + infra."
 readme = "README.md"
 requires-python = ">=3.8"
@@ -12,6 +12,11 @@ license = { text = "MIT" }
 authors = [{ name = "WAVE Online, LLC" }]
 keywords = ["llm", "routing", "local-first", "cost", "edge", "dispatch", "agents", "x402"]
 dependencies = []
+
+[project.optional-dependencies]
+# `pip install wave-dispatch[cdp]` enables real CDP-JWT (ES256) signing in Dispatch.wallet_hook("cdp").
+# Without it, walletHook("cdp") raises a clear hint pointing here or at the provider="custom" escape.
+cdp = ["cryptography>=42"]
 
 [project.urls]
 Homepage = "https://dispatch.wave.online"
