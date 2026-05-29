@@ -1,0 +1,4 @@
+b0da71d0bb145d105fa0c669ee8f16e1bf47e66a 2026-05-29T23:45:19Z
+# wave-foundation pin. Shared rules live in ./.foundation (read-only, do not edit).
+# Edit shared rules in wave-foundation, then re-run: bash $FOUNDATION/scripts/consume.sh
+# Tag: v1.2.2
