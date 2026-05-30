@@ -131,12 +131,12 @@ export declare class Dispatch {
    */
   constructor(license?: string, opts?: DispatchOptions);
 
-  /** Classify a prompt (no execution). */
-  route(prompt: string): Promise<Decision>;
-  /** Classify and run on the edge if your plan allows it. */
-  execute(prompt: string): Promise<Decision>;
+  /** Classify a prompt (no execution). Sovereign tier: pass `profile` (Fast|Expert|Heavy|Code). */
+  route(prompt: string, profile?: string): Promise<Decision>;
+  /** Classify and run on the edge if your plan allows it. Optional `profile` as in {@link route}. */
+  execute(prompt: string, profile?: string): Promise<Decision>;
   /** Classify a pre-computed 768-d embedding (matmul-only: cheapest + fastest). */
-  routeVector(vector: number[]): Promise<Decision>;
+  routeVector(vector: number[], profile?: string): Promise<Decision>;
 
   /** This license's savings ledger. Requires a license. */
   savings(): Promise<Savings>;

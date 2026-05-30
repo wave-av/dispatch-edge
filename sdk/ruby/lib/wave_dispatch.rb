@@ -23,13 +23,14 @@ module WaveDispatch
     end
 
     # Classify a prompt (no execution) -> {"route", "probability", "margin", "forward"}
-    def route(prompt) = send_req(:post, @endpoint + "/", { prompt: prompt })
+    # Sovereign tier: pass profile (Fast|Expert|Heavy|Code) to request a named routing profile.
+    def route(prompt, profile = nil) = send_req(:post, @endpoint + "/", with_profile({ prompt: prompt }, profile))
 
-    # Classify and run on the edge if your plan allows it.
-    def execute(prompt) = send_req(:post, @endpoint + "/", { prompt: prompt, execute: true })
+    # Classify and run on the edge if your plan allows it. Optional profile as in route.
+    def execute(prompt, profile = nil) = send_req(:post, @endpoint + "/", with_profile({ prompt: prompt, execute: true }, profile))
 
     # Classify a pre-computed 768-d embedding (matmul-only: cheapest + fastest).
-    def route_vector(vector) = send_req(:post, @endpoint + "/", { vector: vector })
+    def route_vector(vector, profile = nil) = send_req(:post, @endpoint + "/", with_profile({ vector: vector }, profile))
 
     # This license's savings ledger (decisions, saved_usd, saved_pct, ...). Requires a license.
     def savings = send_req(:get, "#{@agents}/ledger/summary?license=#{lic}")
@@ -52,6 +53,12 @@ module WaveDispatch
     end
 
     private
+
+    # Sovereign tier (D3): attach a named routing profile to the request body. snake_case `profile` is
+    # the cross-SDK contract; the edge resolveProfile() honors body.profile over per-license KV + defaults.
+    def with_profile(body, profile)
+      profile ? body.merge(profile: profile) : body
+    end
 
     def lic
       raise "dispatch: a license is required for savings/subscription" unless @license

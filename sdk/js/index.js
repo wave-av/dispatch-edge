@@ -28,12 +28,12 @@ export class Dispatch {
     this.fetch = fetchImpl || globalThis.fetch;
     this.paymentHook = paymentHook;
   }
-  /** Classify a prompt (no execution). */
-  route(prompt) { return this._send(this.endpoint + "/", "POST", { prompt }); }
-  /** Classify and run on the edge if your plan allows it. */
-  execute(prompt) { return this._send(this.endpoint + "/", "POST", { prompt, execute: true }); }
+  /** Classify a prompt (no execution). Sovereign tier: pass profile (Fast|Expert|Heavy|Code). */
+  route(prompt, profile) { return this._send(this.endpoint + "/", "POST", _withProfile({ prompt }, profile)); }
+  /** Classify and run on the edge if your plan allows it. Optional profile as in route(). */
+  execute(prompt, profile) { return this._send(this.endpoint + "/", "POST", _withProfile({ prompt, execute: true }, profile)); }
   /** Classify a pre-computed 768-d embedding (matmul-only: cheapest + fastest). */
-  routeVector(vector) { return this._send(this.endpoint + "/", "POST", { vector }); }
+  routeVector(vector, profile) { return this._send(this.endpoint + "/", "POST", _withProfile({ vector }, profile)); }
 
   // --- stateful sidecar (this license only; the license key is the bearer) ---
   /** This license's savings ledger: decisions, local_handled, escalated, saved_usd, saved_pct. */
@@ -95,6 +95,13 @@ export class Dispatch {
     if (!r.ok) { const t = await r.text().catch(() => ""); let m = t.slice(0, 200); try { m = JSON.parse(t).error || m; } catch {} throw new Error(`dispatch: ${r.status} ${m}`); }
     return r.json();
   }
+}
+
+// Sovereign tier (D3): attach an optional named routing profile (Fast|Expert|Heavy|Code) to the body.
+// `profile` is the snake_case cross-SDK contract arg; the worker's resolveProfile() honors body.profile
+// over per-license KV + bundled defaults. Falsy profile => unchanged body (zero change for non-Sovereign).
+function _withProfile(body, profile) {
+  return profile ? { ...body, profile } : body;
 }
 
 // 0.6.3 — cred-key normalization. snake_case is canonical (matches the other 4 SDKs + the JWT payload

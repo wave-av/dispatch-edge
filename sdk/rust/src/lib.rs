@@ -73,9 +73,21 @@ impl Dispatch {
         self.post(&self.endpoint, json!({ "prompt": prompt }))
     }
 
+    /// Sovereign tier (D3): classify a prompt under a named routing profile (`Fast`|`Expert`|`Heavy`|
+    /// `Code`). Rust has no default args, so this is a sibling of [`route`] rather than an optional
+    /// param; `profile` is the snake_case cross-SDK contract field the edge `resolveProfile()` honors.
+    pub fn route_with_profile(&self, prompt: &str, profile: &str) -> Result<Value, Box<dyn Error>> {
+        self.post(&self.endpoint, with_profile(json!({ "prompt": prompt }), profile))
+    }
+
     /// Classify and run on the edge if your plan allows it.
     pub fn execute(&self, prompt: &str) -> Result<Value, Box<dyn Error>> {
         self.post(&self.endpoint, json!({ "prompt": prompt, "execute": true }))
+    }
+
+    /// Execute under a named routing profile (Sovereign tier; see [`route_with_profile`]).
+    pub fn execute_with_profile(&self, prompt: &str, profile: &str) -> Result<Value, Box<dyn Error>> {
+        self.post(&self.endpoint, with_profile(json!({ "prompt": prompt, "execute": true }), profile))
     }
 
     /// Classify a pre-computed 768-d embedding (matmul-only: cheapest + fastest).
@@ -175,6 +187,18 @@ impl Dispatch {
         let resp = if let Some(b) = body { retry.send_string(b)? } else { retry.call()? };
         Ok(serde_json::from_str(&resp.into_string()?)?)
     }
+}
+
+// Sovereign tier (D3): attach a named routing profile to a request body. `profile` is the snake_case
+// cross-SDK contract field; the edge resolveProfile() honors body.profile over per-license KV + defaults.
+// Empty profile => unchanged body. Mutates+returns the JSON object in place.
+fn with_profile(mut body: Value, profile: &str) -> Value {
+    if !profile.is_empty() {
+        if let Value::Object(ref mut m) = body {
+            m.insert("profile".into(), Value::String(profile.to_string()));
+        }
+    }
+    body
 }
 
 // Built-in provider sign — HTTP orchestration only; actual signing happens at the provider.
