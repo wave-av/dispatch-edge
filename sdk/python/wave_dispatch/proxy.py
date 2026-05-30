@@ -26,6 +26,14 @@ LICENSE = os.environ.get("WAVE_LICENSE", "")
 OLLAMA = os.environ.get("WAVE_ENDPOINT", "http://127.0.0.1:11434").rstrip("/")
 LOCAL_MODEL = os.environ.get("WAVE_PROXY_LOCAL_MODEL", "qwen2.5:3b-instruct")
 LOG = os.environ.get("WAVE_PROXY_LOG", os.path.expanduser("~/.wave-dispatch-proxy.jsonl"))
+# Sovereign tier (D3): WAVE_PROFILE forces a named routing profile (Fast|Expert|Heavy|Code) — forwarded
+# to the edge classifier so the hosted decision honors the same profile the SDK route(profile=) would.
+PROFILE = os.environ.get("WAVE_PROFILE", "")
+# Optional Heavy tier: a second OpenAI-compatible endpoint tried BEFORE the frontier upstream when a
+# local serve fails. Realizes the local->Heavy->frontier chain in the proxy. Unset => skip straight to
+# upstream (prior behavior). WAVE_HEAVY_MODEL overrides the model on the heavy hop.
+HEAVY_ENDPOINT = os.environ.get("WAVE_HEAVY_ENDPOINT", "").rstrip("/")
+HEAVY_MODEL = os.environ.get("WAVE_HEAVY_MODEL", "")
 
 
 def _log(rec):
@@ -67,8 +75,11 @@ def _route_local(body):
         return False  # keep tool turns on upstream unless you extend this
     if LICENSE:
         try:
+            edge_body = {"prompt": _prompt_of(body)}
+            if PROFILE:
+                edge_body["profile"] = PROFILE   # D3 — request the named profile from the edge
             req = urllib.request.Request(
-                EDGE + "/", data=json.dumps({"prompt": _prompt_of(body)}).encode(),
+                EDGE + "/", data=json.dumps(edge_body).encode(),
                 headers={"content-type": "application/json", "authorization": "Bearer " + LICENSE},
                 method="POST")
             d = json.loads(urllib.request.urlopen(req, timeout=15).read())
@@ -108,14 +119,27 @@ class _Handler(BaseHTTPRequestHandler):
         try:
             resp = urllib.request.urlopen(urllib.request.Request(target, data=send_data, headers=hdrs, method="POST"), timeout=600)
         except Exception as e:
-            if local:  # local failed -> fall through to upstream, never break the caller
-                try:
-                    up_hdrs = {"Content-Type": "application/json"}
-                    if auth:
-                        up_hdrs["Authorization"] = auth
-                    resp = urllib.request.urlopen(urllib.request.Request(UPSTREAM + self.path, data=raw, headers=up_hdrs, method="POST"), timeout=600)
-                except Exception as e2:
-                    self.send_error(502, str(e2)); return
+            if local:  # local failed -> Heavy (if configured) -> frontier upstream; never break the caller
+                resp = None
+                if HEAVY_ENDPOINT:   # D3 — try the Heavy tier before paying for the frontier
+                    try:
+                        h_body = dict(body)
+                        if HEAVY_MODEL:
+                            h_body["model"] = HEAVY_MODEL
+                        resp = urllib.request.urlopen(urllib.request.Request(
+                            HEAVY_ENDPOINT + "/v1/chat/completions", data=json.dumps(h_body).encode(),
+                            headers={"Content-Type": "application/json", "Authorization": "Bearer heavy"}, method="POST"), timeout=600)
+                        _log({"path": self.path, "served": "heavy", "model": HEAVY_MODEL or body.get("model")})
+                    except Exception:
+                        resp = None   # heavy unreachable -> fall through to frontier
+                if resp is None:
+                    try:
+                        up_hdrs = {"Content-Type": "application/json"}
+                        if auth:
+                            up_hdrs["Authorization"] = auth
+                        resp = urllib.request.urlopen(urllib.request.Request(UPSTREAM + self.path, data=raw, headers=up_hdrs, method="POST"), timeout=600)
+                    except Exception as e2:
+                        self.send_error(502, str(e2)); return
             else:
                 self.send_error(502, str(e)); return
         self.send_response(resp.status)

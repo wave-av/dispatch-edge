@@ -19,6 +19,15 @@ DEFAULT_AGENTS_ENDPOINT = "https://dispatch-agents.wave.online"   # stateful sid
 PaymentHook = Callable[[Dict[str, Any]], Dict[str, str]]
 
 
+def _with_profile(body: dict, profile: Optional[str]) -> dict:
+    """Sovereign tier (D3): attach an optional named routing profile to the request body. snake_case
+    `profile` is the cross-SDK contract; the edge resolveProfile() honors body.profile over KV/defaults.
+    Omitted/empty => unchanged body (zero behavior change for non-Sovereign callers)."""
+    if profile:
+        return {**body, "profile": profile}
+    return body
+
+
 class Dispatch:
     """Client for the wave Dispatch edge API."""
 
@@ -30,17 +39,18 @@ class Dispatch:
         self.agents = (agents_endpoint or os.environ.get("WAVE_AGENTS_ENDPOINT") or DEFAULT_AGENTS_ENDPOINT).rstrip("/")
         self.payment_hook = payment_hook    # 0.5.0 — auto-pay on 402 via this hook
 
-    def route(self, prompt: str) -> dict:
-        """Classify a prompt (no execution). Returns {route, probability, margin, forward}."""
-        return self._post(self.endpoint + "/", {"prompt": prompt})
+    def route(self, prompt: str, profile: Optional[str] = None) -> dict:
+        """Classify a prompt (no execution). Returns {route, probability, margin, forward}.
+        Sovereign tier: pass profile= (Fast|Expert|Heavy|Code) to request a named routing profile."""
+        return self._post(self.endpoint + "/", _with_profile({"prompt": prompt}, profile))
 
-    def execute(self, prompt: str) -> dict:
-        """Classify and run on the edge if your plan allows it."""
-        return self._post(self.endpoint + "/", {"prompt": prompt, "execute": True})
+    def execute(self, prompt: str, profile: Optional[str] = None) -> dict:
+        """Classify and run on the edge if your plan allows it. Optional profile= as in route()."""
+        return self._post(self.endpoint + "/", _with_profile({"prompt": prompt, "execute": True}, profile))
 
-    def route_vector(self, vector: list) -> dict:
+    def route_vector(self, vector: list, profile: Optional[str] = None) -> dict:
         """Classify a pre-computed 768-d embedding (matmul-only: cheapest + fastest)."""
-        return self._post(self.endpoint + "/", {"vector": vector})
+        return self._post(self.endpoint + "/", _with_profile({"vector": vector}, profile))
 
     # --- stateful sidecar (scoped to THIS license; the license key is the bearer) ---
     def savings(self) -> dict:
