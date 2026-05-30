@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = "wave-dispatch"
-  s.version     = "0.6.3"
+  s.version     = "0.7.0"
   s.summary     = "wave Dispatch — local-first AI router client"
   s.description = "Route each request to the cheapest capable model (local-first; escalate to your frontier only when needed). BYO keys + infra."
   s.authors     = ["WAVE Online, LLC"]
