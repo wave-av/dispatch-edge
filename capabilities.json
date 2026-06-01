@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1",
+  "repo": "wave-av/dispatch-edge",
+  "version": "0.4.0",
+  "lifecycle": "ga",
+  "planeLayer": 1,
+  "foundationPin": "v1",
+  "maintainers": [{ "team": "agent-ops" }],
+  "exposes": {
+    "apis": [
+      { "protocol": "http", "endpoint": "https://dispatch.wave.online", "auth": "bearer-jwt", "metered": true }
+    ]
+  },
+  "consumes": {
+    "thirdParty": [
+      { "service": "cloudflare-workers", "licenseGated": false },
+      { "service": "anthropic-api", "licenseGated": false },
+      { "service": "openai-api", "licenseGated": false }
+    ],
+    "foundationFrameworks": ["frameworks/protocol-plane", "frameworks/platform-registry"]
+  },
+  "events": {
+    "publishes": [
+      { "topic": "dispatch.route", "transport": "x402-meter" }
+    ]
+  },
+  "tags": ["edge", "public", "agent-dispatch", "ai-routing", "x402-metered", "protocol-plane-layer-1"]
+}
