@@ -1,5 +1,9 @@
 [build-system]
-requires = ["setuptools>=68"]
+# setuptools>=77 for PEP 639: `license` as an SPDX expression plus `license-files`. The old
+# `license = { text = "..." }` table is deprecated and stops building on 2027-02-18, and it is also
+# what let this package ship a license CLAIM with no license TEXT — the table sets a metadata string
+# and nothing else. This is a build-time floor only; the wheel still declares requires-python >=3.8.
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,7 +12,8 @@ version = "0.7.0"
 description = "wave Dispatch — local-first AI router. `dispatch serve` runs an OpenAI-compatible proxy that routes each request to the cheapest capable model (local-first; escalate to your frontier only when needed). BYO keys + infra."
 readme = "README.md"
 requires-python = ">=3.8"
-license = { text = "MIT" }
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 authors = [{ name = "WAVE Online, LLC" }]
 keywords = ["llm", "routing", "local-first", "cost", "edge", "dispatch", "agents", "x402"]
 dependencies = []

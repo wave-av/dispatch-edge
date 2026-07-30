@@ -14,7 +14,7 @@ routing decision and **logs zero prompt content**; with local-first routing, mos
 [![PyPI](https://img.shields.io/pypi/v/wave-dispatch?label=PyPI)](https://pypi.org/project/wave-dispatch/)
 [![crates.io](https://img.shields.io/crates/v/wave-dispatch?label=crates.io)](https://crates.io/crates/wave-dispatch)
 [![Gem](https://img.shields.io/gem/v/wave-dispatch?label=gem)](https://rubygems.org/gems/wave-dispatch)
-[![License: MIT](https://img.shields.io/badge/license-MIT-43d9ad)](./LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache--2.0-43d9ad)](./LICENSE)
 
 </div>
 
@@ -137,4 +137,4 @@ Full breakdown → [pricing](https://dispatch.wave.online/pricing).
 
 ## License
 
-MIT © 2026 WAVE Online, LLC. A [WAVE](https://wave.online) product — local-first by design.
+Apache-2.0 © 2026 WAVE Online, LLC. A [WAVE](https://wave.online) product — local-first by design.

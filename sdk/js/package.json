@@ -13,7 +13,7 @@
   },
   "keywords": ["llm", "routing", "local-first", "cost", "edge", "wave", "dispatch", "x402", "agents"],
   "author": "WAVE Online, LLC",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "homepage": "https://dispatch.wave.online",
   "repository": { "type": "git", "url": "git+https://github.com/wave-av/dispatch-edge.git" },
   "engines": { "node": ">=18" },
