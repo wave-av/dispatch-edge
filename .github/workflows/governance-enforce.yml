@@ -31,8 +31,6 @@ concurrency:
 jobs:
   enforce:
     runs-on: ubuntu-latest
-    env:
-      NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -42,6 +40,10 @@ jobs:
         with:
           node-version: "22"
       - name: fetch governance enforcer (isolated install)
+        # Token scoped to this step only: the enforce step executes downloaded code and
+        # must not see NODE_AUTH_TOKEN.
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p "$RUNNER_TEMP/gov" && cd "$RUNNER_TEMP/gov"
           printf '@wave-av:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n' > .npmrc
@@ -54,9 +56,11 @@ jobs:
           BASE="${PR_BASE_SHA:-$PUSH_BEFORE_SHA}"
           # Empty/all-zero base (branch creation) or a base made unreachable by a force-push:
           # fall back to HEAD~1 instead of handing enforce.mjs a SHA git can't resolve.
+          # If HEAD has no parent (initial commit), diff against the empty tree so the gate
+          # scans everything rather than comparing HEAD with itself and passing vacuously.
           if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ] \
             || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
-            BASE=$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)
+            BASE=$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)
           fi
           echo "diffing against $BASE"
           node "$RUNNER_TEMP/gov/node_modules/@wave-av/governance/bin/enforce.mjs" --changed "$BASE"
