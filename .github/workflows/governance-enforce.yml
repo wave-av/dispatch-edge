@@ -52,7 +52,10 @@ jobs:
           PUSH_BEFORE_SHA: ${{ github.event.before }}
         run: |
           BASE="${PR_BASE_SHA:-$PUSH_BEFORE_SHA}"
-          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+          # Empty/all-zero base (branch creation) or a base made unreachable by a force-push:
+          # fall back to HEAD~1 instead of handing enforce.mjs a SHA git can't resolve.
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ] \
+            || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
             BASE=$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)
           fi
           echo "diffing against $BASE"
