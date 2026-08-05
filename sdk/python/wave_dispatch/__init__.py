@@ -1,4 +1,4 @@
-"""wave Dispatch — thin Python client. Route each request to the cheapest capable model (local-first;
+"""WAVE Dispatch — thin Python client. Route each request to the cheapest capable model (local-first;
 escalate to your frontier only when needed). BYO keys + infra; the service returns a routing decision.
 Stdlib-only (urllib) — zero dependencies."""
 import base64
@@ -29,7 +29,7 @@ def _with_profile(body: dict, profile: Optional[str]) -> dict:
 
 
 class Dispatch:
-    """Client for the wave Dispatch edge API."""
+    """Client for the WAVE Dispatch edge API."""
 
     def __init__(self, license: Optional[str] = None, endpoint: str = DEFAULT_ENDPOINT,
                  agents_endpoint: Optional[str] = None,

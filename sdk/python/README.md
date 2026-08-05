@@ -1,6 +1,6 @@
 # wave-dispatch (Python)
 
-Thin client for [wave Dispatch](https://dispatch.wave.online) — route each request to the cheapest
+Thin client for [WAVE Dispatch](https://dispatch.wave.online) — route each request to the cheapest
 capable model (local-first; escalate to your frontier only when needed). BYO keys + infra. Zero deps.
 
 ```python

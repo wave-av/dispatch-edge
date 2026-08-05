@@ -1,4 +1,4 @@
-// Type declarations for @wave-av/dispatch — the JS/TS client for wave Dispatch.
+// Type declarations for @wave-av/dispatch — the JS/TS client for WAVE Dispatch.
 // Hand-written to match index.js exactly (the JS is the source of truth). A WAVE product.
 
 /** Routing decision returned by `route` / `execute` / `routeVector` (POST `/`). */
@@ -116,7 +116,7 @@ export interface WalletHookConfig {
   fetchImpl?: FetchImpl;
 }
 
-/** Client for the wave Dispatch edge API. */
+/** Client for the WAVE Dispatch edge API. */
 export declare class Dispatch {
   license?: string;
   endpoint: string;

@@ -1,4 +1,4 @@
-// wave Dispatch — JS/TS client for the edge API. Route each request to the cheapest capable model
+// WAVE Dispatch — JS/TS client for the edge API. Route each request to the cheapest capable model
 // (local-first; escalate to your frontier model only when needed). Your keys + infra stay yours.
 const DEFAULT_ENDPOINT = "https://dispatch.wave.online";
 const DEFAULT_AGENTS_ENDPOINT = "https://dispatch-agents.wave.online"; // stateful sidecar: savings + subscriptions

@@ -1,4 +1,4 @@
-// Package dispatch is the Go client for wave Dispatch — route each request to the cheapest capable
+// Package dispatch is the Go client for WAVE Dispatch — route each request to the cheapest capable
 // model (local-first, escalate to your frontier model only when needed). Your keys + infra stay yours;
 // the API returns a routing decision (and, if your plan enables it, the edge-local answer).
 package dispatch
@@ -12,10 +12,10 @@ import (
 	"time"
 )
 
-// DefaultEndpoint is the hosted wave Dispatch edge.
+// DefaultEndpoint is the hosted WAVE Dispatch edge.
 const DefaultEndpoint = "https://dispatch.wave.online"
 
-// Client calls the wave Dispatch edge API.
+// Client calls the WAVE Dispatch edge API.
 type Client struct {
 	Endpoint string       // defaults to DefaultEndpoint
 	License  string       // Bearer license key (wv_...); empty = x402 pay-per-use
