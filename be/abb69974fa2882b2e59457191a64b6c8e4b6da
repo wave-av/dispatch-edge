@@ -1,0 +1,74 @@
+threat-model.md
+  s_6f6453b23e3805::t_6191e575cd609d 1
+sdk/python/pyproject.toml
+  s_6f6453b23e3805::t_4a4fe88bf3fa3b 8
+sdk/python/wave_dispatch/cli.py
+  s_6f6453b23e3805::t_7098667809882a 1
+  s_6f6453b23e3805::t_4728f6ee4fc06b 12
+sdk/rust/Cargo.toml
+  s_6f6453b23e3805::t_245bbb25217972 5
+sdk/js/index.d.ts
+  s_6f6453b23e3805::t_2adf94b159e0aa 119
+  s_6f6453b23e3805::t_3a555c206ab34f 1
+README.md
+  s_6f6453b23e3805::t_c7ebeff150d305 3
+  s_6f6453b23e3805::t_939d4524a79cec 29
+sdk/ruby/wave_dispatch.gemspec
+  s_6f6453b23e3805::t_3ff1ab87b97620 4
+sdk/rust/src/lib.rs
+  s_6f6453b23e3805::t_bff8db69831ef2 1
+edge-router/worker.ts
+  s_6f6453b23e3805::t_a9e7d9b4da9c7a 358
+  s_6f6453b23e3805::t_aea00f1e2988a3 441
+  s_6f6453b23e3805::t_fbd93589a4d06f 325
+  s_6f6453b23e3805::t_0baafbd76a359e 381
+  s_6f6453b23e3805::t_c996068d3624fe 438
+  s_6f6453b23e3805::t_58e8075aaccb98 437
+  s_6f6453b23e3805::t_fc55004c2a27f3 323
+  s_6f6453b23e3805::t_1f8647095de401 463
+  s_6f6453b23e3805::t_cd94eeb23b03dd 223
+  s_6f6453b23e3805::t_0610d008e86635 248-249
+  s_6f6453b23e3805::t_c9977ff5a90c9d 289
+  s_6f6453b23e3805::t_0cc16521f99066 305
+  s_6f6453b23e3805::t_b74674adee84ca 368
+  s_6f6453b23e3805::t_3b9909037df579 376
+  s_6f6453b23e3805::t_fd8c70a218a50d 427
+sdk/js/README.md
+  s_6f6453b23e3805::t_81799f2607d6a5 3
+sdk/go/dispatch.go
+  s_6f6453b23e3805::t_6e9f6a83f77f1c 1
+  s_6f6453b23e3805::t_f7d1bfb19050bf 15
+  s_6f6453b23e3805::t_af4dc3330eba26 18
+sdk/js/package.json
+  s_6f6453b23e3805::t_56a7be0f93d2af 4
+sdk/python/wave_dispatch/__init__.py
+  s_6f6453b23e3805::t_e4304f39bf7629 1
+  s_6f6453b23e3805::t_dc41246a287e2f 32
+sdk/python/README.md
+  s_6f6453b23e3805::t_86748fbd422a67 3
+sdk/ruby/lib/wave_dispatch.rb
+  s_6f6453b23e3805::t_bcc43609d48189 1
+sdk/python/wave_dispatch/proxy.py
+  s_6f6453b23e3805::t_7efdf816980f96 2
+  s_6f6453b23e3805::t_434b4a57bb1db0 160
+sdk/README.md
+  s_6f6453b23e3805::t_6deea0a7868117 1
+sdk/js/index.js
+  s_6f6453b23e3805::t_8158923dec481b 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "beabb69974fa2882b2e59457191a64b6c8e4b6da",
+  "prompts": {},
+  "sessions": {
+    "s_6f6453b23e3805": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "de1b87be-6770-4480-95f9-9ade2a2d7eb6",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Jake Fineman <jakefineman@gmail.com>"
+    }
+  }
+}
