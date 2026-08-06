@@ -53,22 +53,23 @@ jobs:
     name: Secrets + content policy
     # Skips issue/comment events (the tree scan has nothing to say about a comment,
     # and the org should not pay for a gitleaks run every time anyone posts one).
-    # PR `edited` events DO run this job: this is the one check name branch
-    # protection requires, so the body scan must produce a fresh verdict under it,
-    # or an edit could introduce a leak behind a stale green check. The tree-scan
-    # steps below skip `edited` individually (an edit does not change the tree).
+    # On pull_request it runs on EVERY action, `edited` included, and always runs
+    # the FULL scan. This job publishes the one check name branch protection
+    # requires, and GitHub evaluates a required check from the LATEST check run
+    # of that name on the commit: a partial (body-only) run would overwrite a red
+    # tree verdict with a green one, letting a body edit launder a failing secret
+    # scan. Re-scanning an unchanged tree on an edit is the price of a verdict
+    # that cannot be overwritten by a narrower one.
     if: >-
       github.event_name == 'pull_request'
       || github.event_name == 'push'
       || github.event_name == 'workflow_dispatch'
     concurrency:
-      # `edited` runs get their own group and are never cancelled: each body
-      # version deserves a verdict, the run is seconds long, and a body-only run
-      # must never cancel (or be cancelled by) an in-flight tree scan, since a
-      # cancelled tree scan would leave a commit's tree unscanned. Tree runs keep
-      # cancel-in-progress: a superseded scan of an outdated commit is pure waste.
-      group: public-repo-guard-tree-${{ github.event.pull_request.number || github.ref }}-${{ github.event.action == 'edited' && 'body' || 'tree' }}
-      cancel-in-progress: ${{ github.event.action != 'edited' }}
+      # cancel-in-progress is safe here BECAUSE every run of this job has
+      # identical full scope: whatever a superseded run would have said, its
+      # replacement re-checks in full. Nothing is left unscanned by a cancel.
+      group: public-repo-guard-tree-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -78,7 +79,6 @@ jobs:
       # tarball's SHA-256 before extracting, so a tampered or MITM'd download can
       # never execute inside the security gate.
       - name: Install gitleaks (pinned + checksum-verified)
-        if: github.event.action != 'edited'
         env:
           GITLEAKS_VERSION: "8.30.1"
           GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
@@ -92,14 +92,12 @@ jobs:
           gitleaks version
 
       - name: gitleaks (secret scan — published tree)
-        if: github.event.action != 'edited'
         run: gitleaks detect --no-git --source . --config .gitleaks.toml --redact --no-banner --exit-code 1
 
       - name: Install ripgrep
         run: command -v rg >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq ripgrep)
 
       - name: content policy (WAVE trade-secret / internal-leak gate)
-        if: github.event.action != 'edited'
         env:
           GUARD_PRIVATE_REPOS: ${{ vars.GUARD_PRIVATE_REPOS }}
         run: bash scripts/public-repo-guard/content-policy.sh .

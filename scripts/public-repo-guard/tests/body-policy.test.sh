@@ -15,7 +15,13 @@ trap 'rm -rf "$TMP"' EXIT
 
 # The names the real gate is configured with come from an org variable; the tests
 # pin their own so they are hermetic and do not depend on CI configuration.
-export GUARD_PRIVATE_REPOS="wave-gateway, wave-transports, agent-money"
+#
+# Every name below is INVENTED. This file is public and sits inside
+# scripts/public-repo-guard/, which the tree scan and gitleaks deliberately
+# exclude (the gate cannot scan its own fixtures without blocking itself), so a
+# REAL private repo name or credential name written here would be published with
+# no check standing in its way. Keep the names obviously fictional.
+export GUARD_PRIVATE_REPOS="example-private-alpha, example-private-beta, example-private-gamma"
 
 PASS=0; FAIL=0
 
@@ -39,20 +45,20 @@ echo "body-policy fixtures"
 
 # --- must BLOCK ---------------------------------------------------------------
 expect 1 'private repo + credential name' \
-  'Flip is live: WAVE_VIEWPORT_LEASE_SECRET is bound on wave-gateway now.'
+  'Flip is live: EXAMPLE_LEASE_ROTATION_SECRET is bound on example-private-alpha now.'
 expect 1 'private repo + credential name, reverse order' \
-  'The MOQ_JOIN_SECRET was added; wave-transports picks it up on deploy.'
+  'The EXAMPLE_JOIN_SECRET was added; example-private-beta picks it up on deploy.'
 # Regression: `_` is a word character, so a `\b`-anchored class without it could
-# never enter WAVE_VIEWPORT_LEASE_SECRET past its first segment in this order.
+# never enter EXAMPLE_LEASE_ROTATION_SECRET past its first segment in this order.
 expect 1 'private repo FIRST + multi-segment credential name' \
-  'wave-gateway now reads WAVE_VIEWPORT_LEASE_SECRET at boot.'
+  'example-private-alpha now reads EXAMPLE_LEASE_ROTATION_SECRET at boot.'
 # Regression: prose detail stays case-insensitive after case scoping was fixed.
 expect 1 'capitalized prose detail still blocks' \
-  'This adds a Service Binding from the worker to agent-money.'
+  'This adds a Service Binding from the worker to example-private-gamma.'
 expect 1 'private repo + secret count' \
-  'wave-gateway went from 74 secrets to 75 after this change.'
+  'example-private-alpha went from 74 secrets to 75 after this change.'
 expect 1 'private repo + service binding' \
-  'This adds a service binding from the worker to agent-money for settlement.'
+  'This adds a service binding from the worker to example-private-gamma for settlement.'
 expect 1 'operator home path' \
   'Repro: run it from /Users/someoperator/Documents/notes and it fails.'  # enforce-ignore (fixture)
 expect 1 'internal-only marker' \
@@ -77,23 +83,23 @@ expect 1 'internal tailscale IP' \
 
 # --- must PASS (precision — these keep the gate deployable) -------------------
 expect 0 'bare private-repo cross-reference' \
-  'This is the companion change to wave-transports#260; merge that one first.'
+  'This is the companion change to example-private-beta#260; merge that one first.'
 expect 0 'two private repos, no operational detail' \
-  'Both wave-gateway and wave-transports will need a follow-up for this.'
+  'Both example-private-alpha and example-private-beta will need a follow-up for this.'
 expect 0 'credential NAME with no private repo nearby' \
   'The handler now reads SOME_API_TOKEN from the environment instead of a literal.'
 # Regression: case sensitivity is scoped. Lowercase identifiers are everyday
 # code words, not SCREAMING_CASE credential names; a global (?i) blocked these.
 expect 0 'lowercase api_key near a private repo' \
-  'Companion to wave-transports#260; fixes the api_key parsing.'
+  'Companion to example-private-beta#260; fixes the api_key parsing.'
 expect 0 'lowercase cache_key rename in a private repo' \
-  'wave-gateway: rename cache_key to slot_key.'
+  'example-private-alpha: rename cache_key to slot_key.'
 expect 0 'public runner path is not an operator path' \
   'CI checks out to /home/runner/work/repo/repo before the scan runs.'  # enforce-ignore (fixture)
 expect 0 'talking about the control' \
   'body-policy blocks a private repo named next to a SECRET_TOKEN; that is intended.'
 expect 0 'explicit guard:allow with a reason' \
-  'Example for the docs: wave-gateway holds EXAMPLE_SECRET — guard:allow documented-example'
+  'Example for the docs: example-private-alpha holds EXAMPLE_SECRET — guard:allow documented-example'
 expect 0 'ordinary clean body' \
   'Bumps the draft revision and regenerates the fixtures. No behaviour change.'
 # Regression: the first CI run of this job failed on its own PR, because a review
