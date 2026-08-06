@@ -32,6 +32,11 @@ VIOLATIONS=0
 # the gate blocks its own pull requests and every security discussion — the
 # self-referential trap that gets a gate switched off. Ported verbatim in intent
 # from the client-side gate's allowlist, which was built for exactly this.
+#
+# Applied ONLY to the prose-level rules (internal-marker, private-repo-ops; see
+# check() below). A hard credential or infrastructure identifier is a leak no
+# matter how much the surrounding sentence discusses the gate, so those rules
+# never get this exemption; `guard:allow <reason>` stays the one visible escape.
 ABOUT_THE_CONTROL='(public-repo-guard|body-policy|content-policy|public-github-write-gate|\bNDA\s+(gate|guard|policy|denylist|sweep|scan|hook)\b|\bno\s+NDA\b|responsib\w*\s+disclos|SECURITY\.md)'
 
 # check <BLOCK|WARN> <name> <regex> <why>
@@ -62,11 +67,20 @@ check() {
     echo "::error title=public-repo-guard ($name)::ripgrep failed (exit $frc) applying the guard:allow filter for rule '$name'; failing closed."
     exit 2
   fi
-  matches="$(printf '%s' "$filtered" | rg -vNiP -- "$ABOUT_THE_CONTROL")"; frc=$?
-  if (( frc >= 2 )); then
-    echo "::error title=public-repo-guard ($name)::ripgrep failed (exit $frc) applying the about-the-control filter for rule '$name'; failing closed."
-    exit 2
-  fi
+  # The about-the-control exemption applies to PROSE rules only. For the hard
+  # formats (credentials, IPs, account IDs, paths) a hit is a leak even on a
+  # line that names the gate, so filtering it out there would let a real key
+  # ride along with a mention of public-repo-guard.
+  case "$name" in
+    internal-marker|private-repo-ops)
+      matches="$(printf '%s' "$filtered" | rg -vNiP -- "$ABOUT_THE_CONTROL")"; frc=$?
+      if (( frc >= 2 )); then
+        echo "::error title=public-repo-guard ($name)::ripgrep failed (exit $frc) applying the about-the-control filter for rule '$name'; failing closed."
+        exit 2
+      fi
+      ;;
+    *) matches="$filtered" ;;
+  esac
   [[ -z "$matches" ]] && return 0
   local count; count="$(printf '%s\n' "$matches" | grep -c '')"
   # Print the LINE NUMBER only — never the matched text. This annotation is itself
@@ -111,7 +125,7 @@ check BLOCK abs-user-path    '/(Users|home)/(?!runner/)[a-z][a-z0-9._-]+/'    'O
 # A quoted marker is also a trivial bypass, and that is an accepted trade. The
 # threat here is the ACCIDENTAL paste; a deliberate evader has easier routes, and
 # `guard:allow <reason>` already exists as the honest, visible one.
-check BLOCK internal-marker  '(?<![“"'"'"'`])\b(internal[- ]only|do\s+not\s+(share|publish|distribute)|for\s+internal\s+use)\b(?![”"'"'"'`])' 'Text self-identifies as not-for-public'
+check BLOCK internal-marker  '(?i)(?<![“"'"'"'`])\b(internal[- ]only|do\s+not\s+(share|publish|distribute)|for\s+internal\s+use)\b(?![”"'"'"'`])' 'Text self-identifies as not-for-public'
 
 # --- Private repo + operational detail (PROXIMITY, not bare name) ------------
 # The BODY profile deliberately DIVERGES from the FILE profile here, and the
@@ -129,7 +143,14 @@ check BLOCK internal-marker  '(?<![“"'"'"'`])\b(internal[- ]only|do\s+not\s+(s
 # Names are NOT hardcoded (this file is public); CI injects them via the
 # GUARD_PRIVATE_REPOS variable. Unset locally → this check is skipped.
 if [[ -n "${GUARD_PRIVATE_REPOS:-}" ]]; then
-  OPS_DETAIL='(?:[A-Z][A-Z0-9]*_(?:SECRET|TOKEN|KEY|PASSWORD)|wrangler\s+secret|secret\s+(?:is\s+)?(?:bound|binding|list)|(?:is\s+)?bound\s+on|service\s+binding|\d{2,}\s+secrets)'
+  # Case sensitivity is SCOPED, not global. The credential-name class stays
+  # case-SENSITIVE (SCREAMING_CASE is the signal; a global (?i) would make
+  # everyday lowercase identifiers like api_key or cache_key count as
+  # operational detail and block ordinary cross-repo PRs), while the prose
+  # alternatives and the repo names themselves match case-insensitively via
+  # inline (?i:...) groups. The class also allows underscores so multi-segment
+  # names (WAVE_VIEWPORT_LEASE_SECRET) match from their leading \b.
+  OPS_DETAIL='(?:[A-Z][A-Z0-9_]*_(?:SECRET|TOKEN|KEY|PASSWORD)|(?i:wrangler\s+secret|secret\s+(?:is\s+)?(?:bound|binding|list)|(?:is\s+)?bound\s+on|service\s+binding|\d{2,}\s+secrets))'
   _ALT=''
   IFS=', ' read -r -a _PRIV <<< "$GUARD_PRIVATE_REPOS"
   for _name in "${_PRIV[@]}"; do
@@ -141,7 +162,7 @@ if [[ -n "${GUARD_PRIVATE_REPOS:-}" ]]; then
   if [[ -n "$_ALT" ]]; then
     # Both orders: name-then-detail and detail-then-name.
     check BLOCK private-repo-ops \
-      "(?i)\\b(?:${_ALT})\\b[^\\n]{0,140}?\\b${OPS_DETAIL}|${OPS_DETAIL}[^\\n]{0,140}?\\b(?:${_ALT})\\b" \
+      "(?i:\\b(?:${_ALT})\\b)[^\\n]{0,140}?\\b${OPS_DETAIL}|${OPS_DETAIL}[^\\n]{0,140}?(?i:\\b(?:${_ALT})\\b)" \
       'A private WAVE repo named alongside internal operational detail (credential name, secret binding, or secret count) — the wiring topology is not public'
   fi
 fi

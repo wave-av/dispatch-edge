@@ -42,6 +42,13 @@ expect 1 'private repo + credential name' \
   'Flip is live: WAVE_VIEWPORT_LEASE_SECRET is bound on wave-gateway now.'
 expect 1 'private repo + credential name, reverse order' \
   'The MOQ_JOIN_SECRET was added; wave-transports picks it up on deploy.'
+# Regression: `_` is a word character, so a `\b`-anchored class without it could
+# never enter WAVE_VIEWPORT_LEASE_SECRET past its first segment in this order.
+expect 1 'private repo FIRST + multi-segment credential name' \
+  'wave-gateway now reads WAVE_VIEWPORT_LEASE_SECRET at boot.'
+# Regression: prose detail stays case-insensitive after case scoping was fixed.
+expect 1 'capitalized prose detail still blocks' \
+  'This adds a Service Binding from the worker to agent-money.'
 expect 1 'private repo + secret count' \
   'wave-gateway went from 74 secrets to 75 after this change.'
 expect 1 'private repo + service binding' \
@@ -50,6 +57,10 @@ expect 1 'operator home path' \
   'Repro: run it from /Users/someoperator/Documents/notes and it fails.'  # enforce-ignore (fixture)
 expect 1 'internal-only marker' \
   'Attaching the internal-only rollout plan for context.'
+# Regression: the marker rule is case-insensitive — the most natural phrasing of
+# a not-for-public warning starts a sentence with a capital.
+expect 1 'sentence-initial capitalized marker' \
+  'Do not share this rollout doc outside the team.'
 # Assembled at run time rather than written as a literal: a fixture that LOOKS like
 # a live AWS key trips this repo's own pre-commit secret scanners (it did, on the
 # first draft). Splitting the prefix keeps the fixture exercising the real regex
@@ -57,6 +68,10 @@ expect 1 'internal-only marker' \
 AKID_FIXTURE="AKI""A1234567890ABCDEF"
 expect 1 'AWS access key id' \
   "The failing job had ${AKID_FIXTURE} configured."
+# Regression: the about-the-control exemption is prose-rules-only. A credential
+# is a leak even on a line that names the gate.
+expect 1 'credential on a line that also names the control' \
+  "public-repo-guard already flagged ${AKID_FIXTURE} once; reposting for context."
 expect 1 'internal tailscale IP' \
   'It resolves to 100.71.4.19 from inside the fleet.'
 
@@ -67,6 +82,12 @@ expect 0 'two private repos, no operational detail' \
   'Both wave-gateway and wave-transports will need a follow-up for this.'
 expect 0 'credential NAME with no private repo nearby' \
   'The handler now reads SOME_API_TOKEN from the environment instead of a literal.'
+# Regression: case sensitivity is scoped. Lowercase identifiers are everyday
+# code words, not SCREAMING_CASE credential names; a global (?i) blocked these.
+expect 0 'lowercase api_key near a private repo' \
+  'Companion to wave-transports#260; fixes the api_key parsing.'
+expect 0 'lowercase cache_key rename in a private repo' \
+  'wave-gateway: rename cache_key to slot_key.'
 expect 0 'public runner path is not an operator path' \
   'CI checks out to /home/runner/work/repo/repo before the scan runs.'  # enforce-ignore (fixture)
 expect 0 'talking about the control' \
