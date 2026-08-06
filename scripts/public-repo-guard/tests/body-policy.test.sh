@@ -74,10 +74,13 @@ expect 1 'sentence-initial capitalized marker' \
 AKID_FIXTURE="AKI""A1234567890ABCDEF"
 expect 1 'AWS access key id' \
   "The failing job had ${AKID_FIXTURE} configured."
-# Regression: the about-the-control exemption is prose-rules-only. A credential
-# is a leak even on a line that names the gate.
+# Regression: the about-the-control exemption is internal-marker-only. A
+# credential or wiring topology is a leak even on a line that names the gate:
+# quoting a hit to discuss it re-publishes it.
 expect 1 'credential on a line that also names the control' \
   "public-repo-guard already flagged ${AKID_FIXTURE} once; reposting for context."
+expect 1 'topology on a line that names the control' \
+  'body-policy should have flagged EXAMPLE_SECRET bound on example-private-alpha here.'
 expect 1 'internal tailscale IP' \
   'It resolves to 100.71.4.19 from inside the fleet.'
 

@@ -33,10 +33,12 @@ VIOLATIONS=0
 # self-referential trap that gets a gate switched off. Ported verbatim in intent
 # from the client-side gate's allowlist, which was built for exactly this.
 #
-# Applied ONLY to the prose-level rules (internal-marker, private-repo-ops; see
-# check() below). A hard credential or infrastructure identifier is a leak no
-# matter how much the surrounding sentence discusses the gate, so those rules
-# never get this exemption; `guard:allow <reason>` stays the one visible escape.
+# Applied ONLY to the internal-marker rule (see check() below). Every other
+# rule matches content that leaks regardless of what the sentence is about: a
+# credential, an IP, a path, or a private repo wired to operational detail is
+# re-published even when the line quotes it to DISCUSS the gate, exactly like
+# the redacted annotations below never echo a hit. For those rules,
+# `guard:allow <reason>` stays the one visible escape.
 ABOUT_THE_CONTROL='(public-repo-guard|body-policy|content-policy|public-github-write-gate|\bNDA\s+(gate|guard|policy|denylist|sweep|scan|hook)\b|\bno\s+NDA\b|responsib\w*\s+disclos|SECURITY\.md)'
 
 # check <BLOCK|WARN> <name> <regex> <why>
@@ -67,12 +69,14 @@ check() {
     echo "::error title=public-repo-guard ($name)::ripgrep failed (exit $frc) applying the guard:allow filter for rule '$name'; failing closed."
     exit 2
   fi
-  # The about-the-control exemption applies to PROSE rules only. For the hard
-  # formats (credentials, IPs, account IDs, paths) a hit is a leak even on a
-  # line that names the gate, so filtering it out there would let a real key
-  # ride along with a mention of public-repo-guard.
+  # The about-the-control exemption applies to internal-marker ONLY. That rule
+  # matches PHRASES, so a line discussing the gate trips it without leaking
+  # anything. Every other rule (credentials, IPs, paths, and the private-repo
+  # wiring-topology rule this file exists for) matches content whose mere
+  # presence is the leak; "body-policy would flag X bound on <private-repo>"
+  # publishes the topology just as surely as stating it outright.
   case "$name" in
-    internal-marker|private-repo-ops)
+    internal-marker)
       matches="$(printf '%s' "$filtered" | rg -vNiP -- "$ABOUT_THE_CONTROL")"; frc=$?
       if (( frc >= 2 )); then
         echo "::error title=public-repo-guard ($name)::ripgrep failed (exit $frc) applying the about-the-control filter for rule '$name'; failing closed."
