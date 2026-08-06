@@ -1,4 +1,4 @@
-# wave Dispatch — thin Ruby client. Route each request to the cheapest capable model (local-first;
+# WAVE Dispatch — thin Ruby client. Route each request to the cheapest capable model (local-first;
 # escalate to your frontier only when needed). BYO keys + infra. Stdlib only (net/http).
 require "base64"
 require "net/http"

@@ -1,4 +1,4 @@
-# wave Dispatch SDKs
+# WAVE Dispatch SDKs
 
 Thin clients for the edge API (`POST /` → `{route, probability, margin, forward}`; `execute:true` for
 edge-local answers; `vector:[768]` for matmul-only; bearer license or x402). Your keys + infra stay yours.

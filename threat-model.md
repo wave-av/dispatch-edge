@@ -1,4 +1,4 @@
-# wave Dispatch — threat model (#102)
+# WAVE Dispatch — threat model (#102)
 
 Adversarial review of the public surface (`dispatch.wave.online` + the local stack). ✅ = mitigated &
 verified, ⚠️ = partial, ☐ = open. The control-plane/data-plane split means the customer's keys, data,
