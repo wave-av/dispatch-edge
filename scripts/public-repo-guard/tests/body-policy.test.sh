@@ -59,8 +59,6 @@ expect 1 'private repo + secret count' \
   'example-private-alpha went from 74 secrets to 75 after this change.'
 expect 1 'private repo + service binding' \
   'This adds a service binding from the worker to example-private-gamma for settlement.'
-expect 1 'operator home path' \
-  'Repro: run it from /Users/someoperator/Documents/notes and it fails.'  # enforce-ignore (fixture)
 expect 1 'internal-only marker' \
   'Attaching the internal-only rollout plan for context.'
 # Regression: the marker rule is case-insensitive — the most natural phrasing of
@@ -97,6 +95,22 @@ expect 0 'lowercase api_key near a private repo' \
   'Companion to example-private-beta#260; fixes the api_key parsing.'
 expect 0 'lowercase cache_key rename in a private repo' \
   'example-private-alpha: rename cache_key to slot_key.'
+# WARN for bodies, not BLOCK: pasted repro output routinely carries local home
+# paths, and forcing a reporter to rewrite a stack trace to file a bug is the
+# friction that gets a gate switched off. The divergence from the file gate is
+# deliberate; see the rule's comment in body-policy.sh.
+expect 0 'operator home path warns without blocking' \
+  'Repro: run it from /Users/someoperator/Documents/notes and it fails.'  # enforce-ignore (fixture)
+# The demotion must never quietly become deletion: the warning annotation still
+# fires. No pipeline into `grep -q` here: under pipefail its early exit can
+# SIGPIPE the producer and turn a MATCH into a spurious failure.
+printf '%s\n' 'Repro: run it from /Users/someoperator/Documents/notes and it fails.' > "$TMP/body.txt"  # enforce-ignore (fixture)
+WARN_OUT="$(bash "$SCRIPT" "$TMP/body.txt" 2>&1)"
+if [[ "$WARN_OUT" == *'warning title=public-repo-guard (abs-user-path)'* ]]; then
+  PASS=$((PASS+1)); printf '  ok   operator home path still emits its WARN annotation\n'
+else
+  FAIL=$((FAIL+1)); printf '  FAIL operator home path — WARN annotation for abs-user-path missing\n'
+fi
 expect 0 'public runner path is not an operator path' \
   'CI checks out to /home/runner/work/repo/repo before the scan runs.'  # enforce-ignore (fixture)
 expect 0 'talking about the control' \
