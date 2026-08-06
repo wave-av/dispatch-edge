@@ -80,7 +80,7 @@ jobs:
             # A base can be PRESENT and still missing locally: a force-push leaves
             # `github.event.before` pointing at a commit this checkout no longer contains.
             # Narrowing to HEAD~1 here would leave every earlier commit of the force-push
-            # unscanned, so first try to recover the real base — GitHub still serves
+            # unscanned, so first try to recover the real base: GitHub still serves
             # force-push-orphaned objects when fetched by SHA. If it is truly gone, clear
             # BASE and let FIX 5 fail closed on the whole tree.
             git fetch --quiet origin "$BASE" 2>/dev/null || BASE=""
