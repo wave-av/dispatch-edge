@@ -46,13 +46,27 @@ check() {
     echo "::error title=public-repo-guard ($name)::ripgrep failed (exit $rc) scanning rule '$name' — failing closed."
     exit 2
   fi
+  (( rc == 1 )) && return 0
   # Filter with rg, not grep: BSD/macOS grep has no -P, so a `grep -P` allowlist
   # silently errors out locally while working on GNU/CI — the gate would then
   # disagree with itself depending on where it ran. rg is already required above.
-  local matches
-  matches="$(printf '%s' "$raw" \
-    | rg -vN -- 'guard:allow[[:space:]]+[^[:space:]]' \
-    | rg -vNiP -- "$ABOUT_THE_CONTROL" || true)"
+  #
+  # Each stage's exit code is checked EXPLICITLY: 1 (nothing survived the filter)
+  # is a normal clean result, but >=2 is a broken filter and must fail closed,
+  # exactly like the scan above. A bare `|| true` here would turn a filter crash
+  # into an empty match set: a false pass from the one stage meant to narrow,
+  # never erase, the raw hits.
+  local filtered matches frc
+  filtered="$(printf '%s' "$raw" | rg -vN -- 'guard:allow[[:space:]]+[^[:space:]]')"; frc=$?
+  if (( frc >= 2 )); then
+    echo "::error title=public-repo-guard ($name)::ripgrep failed (exit $frc) applying the guard:allow filter for rule '$name'; failing closed."
+    exit 2
+  fi
+  matches="$(printf '%s' "$filtered" | rg -vNiP -- "$ABOUT_THE_CONTROL")"; frc=$?
+  if (( frc >= 2 )); then
+    echo "::error title=public-repo-guard ($name)::ripgrep failed (exit $frc) applying the about-the-control filter for rule '$name'; failing closed."
+    exit 2
+  fi
   [[ -z "$matches" ]] && return 0
   local count; count="$(printf '%s\n' "$matches" | grep -c '')"
   # Print the LINE NUMBER only — never the matched text. This annotation is itself
