@@ -74,7 +74,12 @@ reviews:
       enabled: true
     semgrep:
       enabled: true
-    osv-scanner:
+    # The schema key is `osvScanner`, camelCase. This read `osv-scanner` since the file was
+    # written; `tools` allows additional properties, so CodeRabbit accepted the misspelling
+    # silently and ran no OSV scanning at all. Verified against the live v2 schema
+    # (storage.googleapis.com/coderabbit_public_assets/schema.v2.json, 2026-08-06): the 57 tool
+    # keys include `osvScanner` and do not include `osv-scanner`. (#1083)
+    osvScanner:
       enabled: true
     shellcheck:
       enabled: true
@@ -90,7 +95,12 @@ reviews:
       enabled: true
       packages:
         - "ast-grep-essentials"
-    github_checks:
+    # Same inert-key class as `osvScanner` above: the schema key is `github-checks`
+    # (hyphenated), not `github_checks`, so this block was silently accepted and ignored —
+    # GitHub Checks integration ran on its 90s default, not the 900s configured here.
+    # Verified against the live v2 schema (2026-08-06), which defines `github-checks` with
+    # `enabled` and `timeout_ms` (max 900000). (#1083)
+    github-checks:
       enabled: true
       timeout_ms: 900000
 
