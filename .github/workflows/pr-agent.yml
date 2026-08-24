@@ -12,8 +12,18 @@ permissions:
   pull-requests: write
   contents: read
 
+# Concurrency is evaluated at WORKFLOW level, before any job `if:` — so a run that
+# the reusable lane would skip has already entered this group and evicted whatever
+# was in it. PRs and Issues also share ONE number sequence. The group therefore
+# needs both discriminators, and neither is redundant:
+#   - `event_name` keeps a push-triggered `pull_request` review from being
+#     cancelled by an `issue_comment` on the same PR.
+#   - the `pr`/`issue` kind keeps `issue_comment` on PR #30 from colliding with
+#     `issue_comment` on Issue #30, which `event_name` alone does not separate.
+# Measured fleet-wide: 118 of 137 callers carried the undiscriminated key
+# (wave-pen#386, #420).
 concurrency:
-  group: pr-agent-${{ github.event.pull_request.number || github.event.issue.number || github.ref }}
+  group: pr-agent-${{ github.event_name }}-${{ (github.event.pull_request.number || github.event.issue.pull_request) && 'pr' || 'issue' }}-${{ github.event.pull_request.number || github.event.issue.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
