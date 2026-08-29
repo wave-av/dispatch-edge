@@ -7,9 +7,10 @@
   "types": "index.d.ts",
   "exports": { ".": { "types": "./index.d.ts", "default": "./index.js" } },
   "bin": { "dispatch": "bin/dispatch.js" },
-  "files": ["index.js", "index.d.ts", "bin/", "README.md"],
+  "files": ["index.js", "verify.js", "index.d.ts", "bin/", "README.md"],
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test"
   },
   "keywords": ["llm", "routing", "local-first", "cost", "edge", "wave", "dispatch", "x402", "agents"],
   "author": "WAVE Online, LLC",
@@ -18,6 +19,6 @@
   "repository": { "type": "git", "url": "git+https://github.com/wave-av/dispatch-edge.git" },
   "engines": { "node": ">=18" },
   "devDependencies": {
-    "typescript": "^5.9.0"
+    "typescript": "^7.0.0"
   }
 }

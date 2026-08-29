@@ -10,9 +10,13 @@ keywords = ["llm", "routing", "local-first", "dispatch"]
 categories = ["api-bindings"]
 
 [dependencies]
-ureq = "2"
+ureq = "3"
 serde_json = "1"
-base64 = "0.22"           # 0.5.1 — wallet_hook(privy) needs Basic auth encoding
+base64 = "0.23"           # 0.5.1 — wallet_hook(privy) needs Basic auth encoding
 urlencoding = "2"         # 0.5.1 — wallet_hook(privy) URL-encodes the wallet_id path segment
 p256 = { version = "0.13", features = ["pkcs8", "ecdsa"] }   # 0.6.2 — CDP-JWT (ES256) signing
-rand_core = "0.6"         # 0.6.2 — nonce randomness for CDP-JWT
+getrandom = "0.4"        # rand_core 0.10 dropped OsRng; getrandom is the canonical OS entropy source now (nonce for CDP-JWT)
+ed25519-dalek = "3"       # E4 — verify the two receipts' Ed25519 signatures (offline, trustless)
+hmac = "0.13"             # E4 — HMAC-SHA256 receipt/attestation verify (constant-time verify_slice)
+sha2 = "0.11"             # E4 — SHA-256 for the HMAC path
+hex = "0.4"               # E4 — decode the hex pubkey/sig/hmac

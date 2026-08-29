@@ -6,6 +6,12 @@ require "json"
 require "uri"
 require "openssl"
 
+# Offline verifiers for "the two receipts" (Payment-Receipt + context-Attestation): self-contained
+# (json + openssl only) so it loads independently of the client above. Exposes the flat module API
+# WaveDispatch.canonical_payment_receipt / .verify_payment_receipt / .canonical_attestation /
+# .verify_attestation / .attestation_truncated. See lib/wave_dispatch/verify.rb.
+require_relative "wave_dispatch/verify"
+
 module WaveDispatch
   VERSION = "0.7.0"
 

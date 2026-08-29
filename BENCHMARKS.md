@@ -30,7 +30,7 @@ low-confidence and **escalates to your frontier** (your key); otherwise the loca
 
 - Local handles **~80%** of decisions on mixed agent/dev workloads.
 - `qwen2.5` (local, $0) wins **code · reason · summarize · tool-calling** routes outright (tool-calling 2/2).
-- Customer savings **63–79%** vs frontier-only; dispatch gross margin **~90%**.
+- Customer savings **63–79%** vs frontier-only.
 
 ## Savings model (identical to the on-site calculator)
 
