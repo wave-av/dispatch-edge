@@ -154,4 +154,74 @@ export declare class Dispatch {
   ): Promise<string>;
 }
 
+/** A WAVE context-attestation — signed proof of what a model saw. See docs/attest-hotpath.md. */
+export interface ContextAttestation {
+  v?: string; ts?: number; model?: string; source?: string; chunk?: number;
+  chunk_sha?: string; chunk_chars?: number; num_ctx?: number; prompt_sha?: string;
+  kept?: number; dropped_hallucinated?: number;
+  alg?: "none" | "hmac-sha256" | "ed25519"; sig?: string | null; pubkey?: string; key_id?: string;
+}
+
+/** Canonical signing string for an attestation — byte-for-byte identical to the edge/Python signer. */
+export function canonicalAttestation(att: ContextAttestation): string;
+
+/** True if the model saw less than the full prompt (chunk_sha !== prompt_sha); null if undeterminable. */
+export function attestationTruncated(att: ContextAttestation): boolean | null;
+
+/**
+ * Verify a context-attestation offline & trustless. Returns `true`/`false` when signed & checkable, or
+ * `null` when unsigned (or an HMAC attestation without its key). Ed25519 needs no secret (self-describing).
+ */
+export function verifyAttestation(att: ContextAttestation, opts?: { hmacKey?: string; registry?: TrustedRegistry }): Promise<boolean | null>;
+
+/** A WAVE Payment-Receipt — dispatch's signed proof it verified a settlement (the money half of the two receipts). */
+export interface PaymentReceipt {
+  v?: string; ts?: number; protocol?: string; mode?: string; resource?: string;
+  network?: string; asset?: string | null; amount_atomic?: string; pay_to?: string | null;
+  tx_hash?: string | null; verified?: boolean;
+  alg?: "none" | "hmac-sha256" | "ed25519"; sig?: string | null; pubkey?: string; key_id?: string;
+}
+
+/** Canonical signing string for a Payment-Receipt — byte-for-byte identical to the edge signer. */
+export function canonicalPaymentReceipt(r: PaymentReceipt): string;
+
+/**
+ * Verify a Payment-Receipt offline & trustless. Returns `true`/`false` when signed & checkable, or `null`
+ * when unsigned (or an HMAC receipt without its key). Ed25519 needs no secret (self-describing).
+ */
+export function verifyPaymentReceipt(r: PaymentReceipt, opts?: { hmacKey?: string; registry?: TrustedRegistry }): Promise<boolean | null>;
+
+// ── trusted-key registry (E4.followup): trust's SECOND axis — "is the signer WAVE's key?" ─────────────
+
+/** An immutable set of trusted signer pubkeys, built by {@link makeRegistry}. */
+export interface TrustedRegistry {
+  /** True if `pubkeyHex` (case-insensitive) is a trusted key. */
+  has(pubkeyHex: string): boolean;
+  /** Number of distinct trusted keys (0 => an empty registry, which decides nothing). */
+  size: number;
+}
+
+/** A `/.well-known/wave-keys.json` payload (or any `{keys:[...]}`) accepted by {@link makeRegistry}. */
+export interface WaveKeysPayload {
+  keys: Array<string | { pubkey: string; key_id?: string; alg?: string }>;
+  [k: string]: unknown;
+}
+
+/**
+ * Build a {@link TrustedRegistry} from `{pubkey, key_id?}` entries (or bare pubkey-hex strings), or a
+ * `/.well-known/wave-keys.json` payload. Malformed (non-hex / odd-length) entries are dropped.
+ */
+export function makeRegistry(
+  entries?: WaveKeysPayload | Array<string | { pubkey: string; key_id?: string; alg?: string }> | null
+): TrustedRegistry;
+
+/**
+ * Is the signer's key one WAVE published? `true` = ed25519 key in `registry` with an honest key_id; `false`
+ * = a valid-shaped key that is NOT trusted (or a key_id that lies about its pubkey); `null` = cannot decide
+ * (no/empty registry, unsigned, "none", or HMAC). Does NOT verify the signature — that's verify*().
+ */
+export function trustedSigner(
+  r: PaymentReceipt | ContextAttestation, registry?: TrustedRegistry | null
+): Promise<boolean | null>;
+
 export default Dispatch;

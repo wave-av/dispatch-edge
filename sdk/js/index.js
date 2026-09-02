@@ -211,4 +211,75 @@ async function _signCdpJwt(creds, accept) {
 // canonical, camelCase aliases coerced via _normCreds.
 Dispatch.signCdpJwt = (creds, accept) => _signCdpJwt(_normCreds(creds), accept);
 
+// ── Context-attestation verification (offline + trustless) ─────────────────────────────────────────
+// Verify a WAVE context-attestation WITHOUT trusting WAVE: an Ed25519 attestation embeds its own public
+// key, so this confirms "what the model saw" (and whether the prompt was truncated) using only WebCrypto —
+// no network, no secret, no dependency. HMAC attestations need the shared secret (pass {hmacKey}). The
+// canonical form is byte-identical to the edge signer (edge-router/context-attest.ts) and the Python signer,
+// pinned by the cross-language vector in attest.test.js. See docs/attest-hotpath.md.
+const ATTEST_FIELDS = ["v", "ts", "model", "source", "chunk", "chunk_sha", "chunk_chars", "num_ctx", "prompt_sha", "kept", "dropped_hallucinated"];
+
+function _asciiEscape(s) {
+  // Python's json.dumps(ensure_ascii=True) escapes every non-ASCII char as \uXXXX; JSON.stringify does not.
+  return s.replace(/[-￿]/g, (c) => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"));
+}
+
+/** Canonical signing string for an attestation — byte-for-byte identical to the edge/Python signer. */
+export function canonicalAttestation(att) {
+  const sorted = {};
+  for (const k of [...ATTEST_FIELDS].sort()) sorted[k] = att?.[k] ?? null;   // missing -> null, like Python None
+  return _asciiEscape(JSON.stringify(sorted));
+}
+
+/** True if the model saw less than the full prompt (chunk_sha !== prompt_sha); null if undeterminable. */
+export function attestationTruncated(att) {
+  return typeof att?.prompt_sha === "string" && typeof att?.chunk_sha === "string" ? att.chunk_sha !== att.prompt_sha : null;
+}
+
+function _fromHex(h) { const a = new Uint8Array(h.length / 2); for (let i = 0; i < a.length; i++) a[i] = parseInt(h.slice(i * 2, i * 2 + 2), 16); return a; }
+function _toHex(buf) { let o = ""; for (const x of new Uint8Array(buf)) o += x.toString(16).padStart(2, "0"); return o; }
+// constant-time string compare — no length/early-exit leak (mirrors edge crypto-util.timingSafeEqual).
+function _timingSafeEqual(a, b) { const n = Math.max(a.length, b.length); let m = a.length ^ b.length; for (let i = 0; i < n; i++) m |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0); return m === 0; }
+
+/**
+ * Verify a context-attestation. Returns `true`/`false` when it is signed and checkable, and `null` when it
+ * is unsigned or is an HMAC attestation given without its key. Ed25519 is self-describing (no key needed) —
+ * fully trustless + offline. Throws only if WebCrypto is unavailable (need Node >=18 or a modern browser).
+ */
+async function _attSigValid(att, hmacKey) {                                  // crypto half: is the SIGNATURE valid? (true/false/null)
+  if (!att || !att.alg || att.alg === "none" || !att.sig) return null;
+  const subtle = globalThis.crypto && globalThis.crypto.subtle;
+  if (!subtle) throw new Error("WebCrypto unavailable — verifyAttestation needs Node >=18 or a modern browser");
+  const msg = new TextEncoder().encode(canonicalAttestation(att));
+  if (att.alg === "ed25519") {
+    if (!att.pubkey) return null;
+    try {
+      const pub = await subtle.importKey("raw", _fromHex(att.pubkey), "Ed25519", false, ["verify"]);
+      return await subtle.verify("Ed25519", pub, _fromHex(att.sig), msg);   // self-describing: anyone verifies
+    } catch { return false; }
+  }
+  if (att.alg === "hmac-sha256") {
+    if (!hmacKey) return null;                                              // we-verify only with the shared key
+    const key = await subtle.importKey("raw", new TextEncoder().encode(hmacKey), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    return _timingSafeEqual(_toHex(await subtle.sign("HMAC", key, msg)), att.sig);
+  }
+  return null;
+}
+
+/**
+ * Verify a context-attestation (signature half: {@link _attSigValid}). Pass `{registry}` to ALSO require the
+ * signer be a WAVE-published key — a valid signature from an untrusted key then returns `false`. Without
+ * `{registry}`, behaviour is byte-identical to before.
+ */
+export async function verifyAttestation(att, { hmacKey, registry } = {}) {
+  const v = await _attSigValid(att, hmacKey);
+  if (registry && v === true && (await trustedSigner(att, registry)) === false) return false;
+  return v;
+}
+
+// ── Payment-Receipt + trusted-key registry: both live in ./verify.js (self-contained, zero-dep) so this
+// entrypoint stays under the 300-line gate; re-exported so the public API is unchanged. ────────────────
+import { trustedSigner } from "./verify.js";   // local use by the {registry} fold above (imports are hoisted)
+export { canonicalPaymentReceipt, verifyPaymentReceipt, makeRegistry, trustedSigner } from "./verify.js";
+
 export default Dispatch;

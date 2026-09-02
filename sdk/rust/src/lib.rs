@@ -5,6 +5,15 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+// E4 verify-everywhere: offline trustless verifiers for the two receipts (canonical byte-parity to the edge
+// signers + the other SDKs, pinned by shared vectors). Public API re-exported flat.
+mod verify;
+pub use verify::{
+    attestation_truncated, canonical_attestation, canonical_payment_receipt, make_registry,
+    trusted_signer, verify_attestation, verify_attestation_trusted, verify_payment_receipt,
+    verify_payment_receipt_trusted, Registry,
+};
+
 /// 0.6.2 — CDP-JWT (ES256/P-256) signer. Uses the `p256` crate (added to dependencies). Pure Rust;
 /// no openssl FFI. Header: {alg:'ES256', kid:<api_key>, typ:'JWT', nonce:<rand-hex16>}. Payload:
 /// {sub:<api_key>, iss:'cdp', nbf:<now>, exp:<now+120>, uri:'POST dispatch.wave.online<resource>', claim:<accept>}.
@@ -19,8 +28,8 @@ pub fn sign_cdp_jwt(api_key: &str, pem_secret: &str, accept: &Value) -> Result<S
     // 16 random bytes → 32 hex chars (uses rand from p256/sec1 transitive)
     let mut nonce_bytes = [0u8; 16];
     {
-        use rand_core::{OsRng, RngCore};
-        OsRng.fill_bytes(&mut nonce_bytes);
+        getrandom::fill(&mut nonce_bytes)
+            .expect("OS entropy unavailable for CDP-JWT nonce");
     }
     let nonce = nonce_bytes.iter().fold(String::with_capacity(32), |mut s, b| { use std::fmt::Write; let _ = write!(s, "{:02x}", b); s });
     let resource = accept.get("resource").and_then(|v| v.as_str()).unwrap_or("/");
@@ -145,47 +154,74 @@ impl Dispatch {
         self.license.clone().ok_or_else(|| "dispatch: a license is required for savings()/subscription()".into())
     }
 
-    fn auth(&self, mut req: ureq::Request) -> ureq::Request {
+    fn auth<B>(&self, mut req: ureq::RequestBuilder<B>) -> ureq::RequestBuilder<B> {
         if let Some(l) = &self.license {
-            req = req.set("authorization", &format!("Bearer {}", l));
+            req = req.header("authorization", &format!("Bearer {}", l));
         }
         req
     }
 
     fn post(&self, url: &str, body: Value) -> Result<Value, Box<dyn Error>> {
         let body_str = body.to_string();
-        let req = self.auth(ureq::post(url).set("content-type", "application/json"));
-        match req.send_string(&body_str) {
-            Ok(r) => Ok(serde_json::from_str(&r.into_string()?)?),
-            Err(ureq::Error::Status(402, r)) => self.retry_with_hook("POST", url, Some(&body_str), r),
-            Err(e) => Err(Box::new(e)),
+        let req = self.auth(ureq::post(url).header("content-type", "application/json"));
+        match req.send(body_str.as_str()) {
+            Ok(mut r) => Ok(serde_json::from_str(&r.into_body().read_to_string()?)?),
+            Err(e) => {
+                if matches!(&e, ureq::Error::StatusCode(402)) {
+                    // v3 errors do not carry the response; re-issue to capture the x402 challenge body
+                    return self.retry_with_hook("POST", url, Some(&body_str));
+                }
+                Err(Box::new(e))
+            }
         }
     }
 
     fn get(&self, url: &str) -> Result<Value, Box<dyn Error>> {
-        let req = self.auth(ureq::get(url).set("content-type", "application/json"));
+        let req = self.auth(ureq::get(url).header("content-type", "application/json"));
         match req.call() {
-            Ok(r) => Ok(serde_json::from_str(&r.into_string()?)?),
-            Err(ureq::Error::Status(402, r)) => self.retry_with_hook("GET", url, None, r),
-            Err(e) => Err(Box::new(e)),
+            Ok(mut r) => Ok(serde_json::from_str(&r.into_body().read_to_string()?)?),
+            Err(e) => {
+                if matches!(&e, ureq::Error::StatusCode(402)) {
+                    return self.retry_with_hook("GET", url, None);
+                }
+                Err(Box::new(e))
+            }
         }
     }
 
-    fn retry_with_hook(&self, method: &str, url: &str, body: Option<&str>, r: ureq::Response) -> Result<Value, Box<dyn Error>> {
+    fn retry_with_hook(&self, method: &str, url: &str, body: Option<&str>) -> Result<Value, Box<dyn Error>> {
         let hook = self.payment_hook.as_ref()
             .ok_or("dispatch: 402 payment required (x402) — pay and retry, or set a license / payment_hook")?;
-        let challenge: Value = serde_json::from_str(&r.into_string()?)?;
-        let headers = hook(&challenge)?;
-        let mut retry = if method == "POST" {
-            self.auth(ureq::post(url).set("content-type", "application/json"))
+        // v3: re-issue the call to capture the 402 challenge body (errors no longer carry responses)
+        let challenge_text = if method == "POST" {
+            let probe = self.auth(ureq::post(url).header("content-type", "application/json"));
+            match probe.send(body.unwrap_or("")) {
+                Ok(mut r) => r.into_body().read_to_string()?,
+                Err(e) => return Err(Box::new(e)),
+            }
         } else {
-            self.auth(ureq::get(url).set("content-type", "application/json"))
+            let probe = self.auth(ureq::get(url).header("content-type", "application/json"));
+            match probe.call() {
+                Ok(mut r) => r.into_body().read_to_string()?,
+                Err(e) => return Err(Box::new(e)),
+            }
         };
-        for (k, v) in &headers {
-            retry = retry.set(k, v);
-        }
-        let resp = if let Some(b) = body { retry.send_string(b)? } else { retry.call()? };
-        Ok(serde_json::from_str(&resp.into_string()?)?)
+        let challenge: Value = serde_json::from_str(&challenge_text)?;
+        let headers = hook(&challenge)?;
+        let mut resp = if let Some(b) = body {
+            let mut retry = self.auth(ureq::post(url).header("content-type", "application/json"));
+            for (k, v) in &headers {
+                retry = retry.header(k, v);
+            }
+            retry.send(b)?
+        } else {
+            let mut retry = self.auth(ureq::get(url).header("content-type", "application/json"));
+            for (k, v) in &headers {
+                retry = retry.header(k, v);
+            }
+            retry.call()?
+        };
+        Ok(serde_json::from_str(&resp.into_body().read_to_string()?)?)
     }
 }
 
@@ -235,11 +271,11 @@ fn wallet_sign(provider: &str, creds: &HashMap<String, String>, challenge: &Valu
             let body = json!({ "method": "personal_sign", "params": { "message": accept.to_string() }, "chain_type": "ethereum" }).to_string();
             let url = format!("https://auth.privy.io/api/v1/wallets/{}/rpc", urlencoding::encode(wallet_id));
             let resp = ureq::post(&url)
-                .set("content-type", "application/json")
-                .set("authorization", &format!("Basic {}", basic))
-                .set("privy-app-id", app_id)
-                .send_string(&body)?;
-            let j: Value = serde_json::from_str(&resp.into_string()?)?;
+                .header("content-type", "application/json")
+                .header("authorization", &format!("Basic {}", basic))
+                .header("privy-app-id", app_id)
+                .send(body.as_str())?;
+            let j: Value = serde_json::from_str(&resp.into_body().read_to_string()?)?;
             let sig = j.get("data").and_then(|d| d.get("signature")).or_else(|| j.get("signature")).cloned().unwrap_or(Value::Null);
             Ok(json!({ "provider": "privy", "signature": sig, "accept": accept }).to_string())
         }
@@ -251,10 +287,10 @@ fn wallet_sign(provider: &str, creds: &HashMap<String, String>, challenge: &Valu
                 "amount": accept.get("maxAmountRequired")
             }).to_string();
             let resp = ureq::post("https://api.bridge.xyz/v0/transfers")
-                .set("content-type", "application/json")
-                .set("api-key", api_key)
-                .send_string(&body)?;
-            let j: Value = serde_json::from_str(&resp.into_string()?)?;
+                .header("content-type", "application/json")
+                .header("api-key", api_key)
+                .send(body.as_str())?;
+            let j: Value = serde_json::from_str(&resp.into_body().read_to_string()?)?;
             Ok(json!({ "provider": "bridge", "id": j.get("id"), "accept": accept }).to_string())
         }
         other => Err(format!("dispatch::wallet_sign: unsupported provider \"{}\"", other).into()),

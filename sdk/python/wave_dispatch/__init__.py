@@ -8,6 +8,13 @@ import urllib.parse
 import urllib.request
 import urllib.error
 from typing import Callable, Optional, Dict, Any   # CR/#3: py3.8 compat (str | None is py3.10+)
+# E4 verify-everywhere: offline trustless verifiers for the two receipts (canonical byte-parity to the edge
+# signers + the JS SDK, pinned by shared vectors). Stdlib-only at import; Ed25519 lazily needs `cryptography`.
+from .verify import (  # noqa: F401
+    canonical_payment_receipt, verify_payment_receipt,
+    canonical_attestation, verify_attestation, attestation_truncated,
+    make_registry, trusted_signer,
+)
 
 __version__ = "0.6.2"
 DEFAULT_ENDPOINT = "https://dispatch.wave.online"
