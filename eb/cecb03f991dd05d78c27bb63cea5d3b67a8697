@@ -1,0 +1,19 @@
+sdk/rust/Cargo.toml
+  s_2978b75de3ae12::t_98634971e5aa33 18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "ebcecb03f991dd05d78c27bb63cea5d3b67a8697",
+  "prompts": {},
+  "sessions": {
+    "s_2978b75de3ae12": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-ac3536ed7741cf2ac",
+        "model": "unknown"
+      },
+      "human_author": "Jake Fineman <jakefineman@gmail.com>"
+    }
+  }
+}
