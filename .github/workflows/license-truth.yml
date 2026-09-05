@@ -1,0 +1,48 @@
+name: license-truth
+
+# LEGAL-001 gate for dispatch-edge. Blocks the class of defect fixed in #451/#39: every
+# one of the five SDK manifests here (go, js, python, ruby, rust) declared MIT while
+# LICENSE had been the Apache-2.0 text since e3b3fb8 — nothing in the existing gates read
+# a license FILE, so nothing could see it. Also blocks the subtler sibling: a manifest
+# declaring a license while its own package directory ships no LICENSE text at all (npm
+# and cargo pack from the PACKAGE directory only, never a monorepo root, so a root-level
+# LICENSE never travels with a `sdk/js` or `sdk/rust` publish).
+#
+# FAILS CLOSED. `node scripts/license-truth.mjs` exits 1 on divergence AND on "could not
+# measure anything" (0 manifests found, or manifests found but none declares a license) —
+# never green on an empty denominator. See the header comment in scripts/license-truth.mjs.
+#
+# The selftest runs first, every time: a detector that cannot catch a PLANTED bug is not
+# trusted to report on the real tree.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  license-truth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      - name: Drill the detector RED on seeded violations first
+        run: node scripts/license-truth.selftest.mjs
+
+      - name: License truth gate
+        run: node scripts/license-truth.mjs
