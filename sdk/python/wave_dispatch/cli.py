@@ -1,4 +1,4 @@
-"""wave Dispatch CLI — `dispatch serve` runs the local-first proxy. Installed by `pip install wave-dispatch`."""
+"""WAVE Dispatch CLI — `dispatch serve` runs the local-first proxy. Installed by `pip install wave-dispatch`."""
 import sys
 
 
@@ -9,7 +9,7 @@ def main():
         proxy.serve()
         return
     print(
-        "wave Dispatch — https://dispatch.wave.online\n"
+        "WAVE Dispatch — https://dispatch.wave.online\n"
         "\n"
         "  dispatch serve     run the local-first OpenAI-compatible proxy on :8090\n"
         "                     point your agent at it:  OPENAI_BASE_URL=http://localhost:8090/v1\n"

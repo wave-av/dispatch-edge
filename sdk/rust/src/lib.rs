@@ -1,4 +1,4 @@
-//! wave Dispatch — thin Rust client. Route each request to the cheapest capable model (local-first;
+//! WAVE Dispatch — thin Rust client. Route each request to the cheapest capable model (local-first;
 //! escalate to your frontier only when needed). BYO keys + infra; the service returns a routing decision.
 use serde_json::{json, Value};
 use std::collections::HashMap;

@@ -1,7 +1,7 @@
 {
   "name": "@wave-av/dispatch",
   "version": "0.7.0",
-  "description": "wave Dispatch — route each request to the cheapest capable model (local-first; escalate to your frontier model only when needed). BYO keys + infra; we return the routing decision.",
+  "description": "WAVE Dispatch — route each request to the cheapest capable model (local-first; escalate to your frontier model only when needed). BYO keys + infra; we return the routing decision.",
   "type": "module",
   "main": "index.js",
   "types": "index.d.ts",

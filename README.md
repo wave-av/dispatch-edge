@@ -1,6 +1,6 @@
 <div align="center">
 
-# wave Dispatch — edge worker
+# WAVE Dispatch — edge worker
 
 **Local-first AI routing.** Send every request to the cheapest *capable* model — your local models first
 ($0, your infra), escalating to a frontier (Claude / GPT / Gemini / …) only when confidence is low.
@@ -26,7 +26,7 @@ Most agent and LLM workloads send *everything* to a frontier model — including
 local model handles perfectly. You pay frontier prices for work that didn't need it, and your prompts leave
 your infra on every call.
 
-wave Dispatch puts a tiny classifier at the edge. It embeds each request (Workers AI, `bge-base-en`),
+WAVE Dispatch puts a tiny classifier at the edge. It embeds each request (Workers AI, `bge-base-en`),
 runs a matmul over bundled weights, and returns a **routing decision**: which tier should handle this, with
 a confidence and margin. Your runtime does the rest — local models on your hardware, frontier only when the
 classifier isn't confident enough.

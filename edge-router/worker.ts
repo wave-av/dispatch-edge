@@ -220,7 +220,7 @@ async function executeAtEdge(env: any, route: string, prompt: string): Promise<{
 
 // Public, static, $0 landing page — no env.AI call, no data, safe to be on the open internet.
 const LANDING = `<!doctype html><html lang="en"><head><meta charset="utf-8"><link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>wave Dispatch — local-first AI routing</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>WAVE Dispatch — local-first AI routing</title>
 <style>
 :root{--bg:#0b0f14;--fg:#cfe3f7;--dim:#5b7287;--acc:#43d9ad;--warn:#e6b450}
 ::selection{background:var(--acc);color:var(--bg)}
@@ -245,8 +245,8 @@ color:var(--dim);font-size:.8rem;margin-right:.4rem}
 .foot{margin-top:1.8rem;border-top:1px solid #1c2733;padding-top:1rem;color:var(--dim);font-size:.85rem}
 .foot a{margin-right:.4rem}
 </style></head><body><div class="card">
-<div class="top"><a href="/" style="text-decoration:none;color:#fff"><strong>wave <span class="acc">Dispatch</span></strong></a><a href="https://wave.online">wave.online ↗</a></div>
-<h1>wave <span class="acc">Dispatch</span></h1>
+<div class="top"><a href="/" style="text-decoration:none;color:#fff"><strong>WAVE <span class="acc">Dispatch</span></strong></a><a href="https://wave.online">wave.online ↗</a></div>
+<h1>WAVE <span class="acc">Dispatch</span></h1>
 <p class="sub">local-first AI dispatch — a serverless router that sends each request to the cheapest capable model, your infra + your keys.</p>
 <div><span class="tag">tier 1 · local pool</span><span class="tag">tier 2 · local agent</span><span class="tag">tier 3 · your frontier model (rare)</span></div>
 <pre>  prompt
@@ -286,7 +286,7 @@ color:var(--dim);font-size:.8rem;margin-right:.4rem}
 function transparencyHtml(m: any): string {
   const li = (xs: string[]) => xs.map((x) => `<li>${x}</li>`).join("");
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>wave Dispatch — data &amp; privacy</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>WAVE Dispatch — data &amp; privacy</title>
 <style>
 :root{--bg:#0b0f14;--fg:#cfe3f7;--dim:#5b7287;--acc:#43d9ad;--warn:#e6b450}
 ::selection{background:var(--acc);color:var(--bg)}
@@ -302,7 +302,7 @@ a{color:var(--acc)}@media(max-width:480px){pre{font-size:.68rem;line-height:1.45
 .good{color:var(--acc)}.foot{margin-top:1.6rem;border-top:1px solid #1c2733;padding-top:1rem;color:var(--dim);font-size:.85rem}
 .foot a{margin-right:.4rem}
 </style></head><body><div class="card">
-<div class="top"><a href="/" style="text-decoration:none;color:#fff"><strong>wave <span class="acc">Dispatch</span></strong></a><a href="https://wave.online">wave.online ↗</a></div>
+<div class="top"><a href="/" style="text-decoration:none;color:#fff"><strong>WAVE <span class="acc">Dispatch</span></strong></a><a href="https://wave.online">wave.online ↗</a></div>
 <h1>data &amp; privacy</h1>
 <p class="sub">${m.role}. The trust contract — verify it programmatically at <a href="/transparency?format=json">/transparency?format=json</a>.</p>
 <div class="box"><h3>What the edge sees</h3>${m.data_policy.sees}</div>
@@ -320,9 +320,9 @@ a{color:var(--acc)}@media(max-width:480px){pre{font-size:.68rem;line-height:1.45
 }
 
 // Favicon: the real WAVE curled-wave mark, recolored to the solid dispatch teal (#43d9ad), no gradient.
-const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 102"><title>wave Dispatch</title><g transform="translate(-55.797,177.088) scale(0.024,-0.024)" fill="#43d9ad" stroke="none"><path d="M5055 7373 c-222 -26 -372 -59 -559 -123 -542 -184 -1021 -519 -1397 -980 -438 -535 -683 -1114 -761 -1795 -24 -207 -13 -775 14 -775 16 0 217 123 368 224 359 241 729 567 1156 1017 466 491 757 732 1081 897 247 126 458 178 683 169 277 -11 487 -99 680 -284 194 -184 305 -402 333 -650 38 -343 -148 -743 -438 -943 -262 -180 -592 -170 -791 25 -141 140 -188 357 -125 582 25 86 99 256 135 309 14 21 24 39 22 41 -6 7 -129 -83 -203 -149 -177 -156 -306 -352 -369 -563 -24 -79 -28 -107 -28 -230 0 -160 13 -220 74 -352 124 -265 364 -476 660 -581 155 -55 236 -67 435 -66 150 0 196 4 274 22 291 69 536 208 762 432 301 297 482 651 560 1095 19 105 23 167 23 325 1 259 -25 431 -100 680 -83 272 -251 577 -453 820 -434 523 -1196 868 -1896 858 -60 0 -123 -3 -140 -5z"/></g></svg>`;
+const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 102"><title>WAVE Dispatch</title><g transform="translate(-55.797,177.088) scale(0.024,-0.024)" fill="#43d9ad" stroke="none"><path d="M5055 7373 c-222 -26 -372 -59 -559 -123 -542 -184 -1021 -519 -1397 -980 -438 -535 -683 -1114 -761 -1795 -24 -207 -13 -775 14 -775 16 0 217 123 368 224 359 241 729 567 1156 1017 466 491 757 732 1081 897 247 126 458 178 683 169 277 -11 487 -99 680 -284 194 -184 305 -402 333 -650 38 -343 -148 -743 -438 -943 -262 -180 -592 -170 -791 25 -141 140 -188 357 -125 582 25 86 99 256 135 309 14 21 24 39 22 41 -6 7 -129 -83 -203 -149 -177 -156 -306 -352 -369 -563 -24 -79 -28 -107 -28 -230 0 -160 13 -220 74 -352 124 -265 364 -476 660 -581 155 -55 236 -67 435 -66 150 0 196 4 274 22 291 69 536 208 762 432 301 297 482 651 560 1095 19 105 23 167 23 325 1 259 -25 431 -100 680 -83 272 -251 577 -453 820 -434 523 -1196 868 -1896 858 -60 0 -123 -3 -140 -5z"/></g></svg>`;
 
-const LLMS_TXT = `# wave Dispatch
+const LLMS_TXT = `# WAVE Dispatch
 > Local-first AI dispatch — routes each LLM request to the cheapest capable model. Bring your own
 > infra and API keys (BYOK); the service only ever returns a routing decision, never your data.
 
@@ -355,7 +355,7 @@ We never log prompt content, your data, your keys, or model outputs.
 // Shared page shell — consistent header + footer + style for /status, /docs (and future pages).
 function shell(title: string, inner: string): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>wave Dispatch — ${title}</title><style>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>WAVE Dispatch — ${title}</title><style>
 body{margin:0;background:#0b0f14;color:#cfe3f7;font:15px/1.6 ui-monospace,Menlo,monospace;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:2rem}
 ::selection{background:#43d9ad;color:#0b0f14}
 .card{max-width:640px;width:100%}h1{font-size:1.3rem;margin:0 0 .25rem;color:#fff}
@@ -365,7 +365,7 @@ body{margin:0;background:#0b0f14;color:#cfe3f7;font:15px/1.6 ui-monospace,Menlo,
 .r{display:flex;gap:.6rem;margin:.2rem 0}.kk{color:#43d9ad;min-width:8rem}
 .foot{margin-top:1.6rem;border-top:1px solid #1c2733;padding-top:1rem;color:#5b7287;font-size:.85rem}.foot a{margin-right:.5rem}
 </style></head><body><div class="card">
-<div class="top"><a href="/" style="text-decoration:none;color:#fff"><strong>wave <span class="good">Dispatch</span></strong></a><a href="https://wave.online">wave.online ↗</a></div>
+<div class="top"><a href="/" style="text-decoration:none;color:#fff"><strong>WAVE <span class="good">Dispatch</span></strong></a><a href="https://wave.online">wave.online ↗</a></div>
 ${inner}
 <footer class="foot"><a href="/">dispatch</a> · <a href="/about">about</a> · <a href="/quickstart">quickstart</a> · <a href="/status">status</a> · <a href="/docs">docs</a> · <a href="/transparency">data &amp; privacy</a> · <a href="https://wave.online">← wave.online</a></footer>
 </div></body></html>`;
@@ -373,12 +373,12 @@ ${inner}
 
 function successHtml(key: string | null): string {
   const body = key
-    ? `<h1 class="good">✓ you're in</h1><p class="sub">Your wave Dispatch license key — store it securely, it authorizes your edge calls.</p>
+    ? `<h1 class="good">✓ you're in</h1><p class="sub">Your WAVE Dispatch license key — store it securely, it authorizes your edge calls.</p>
        <div class="box"><code>${key}</code></div>
        <p class="sub">Use it: <code>Authorization: Bearer ${key}</code> on POST <a href="/">dispatch.wave.online</a>, or as <code>WAVE_LICENSE</code> for the proxies. See <a href="https://wave.online">wave.online</a>.</p>`
     : `<h1>payment received</h1><p class="sub">Your license key is being issued — refresh this page in a few seconds. If it doesn't appear, contact support via <a href="https://wave.online">wave.online</a>.</p>`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>wave Dispatch — welcome</title><style>
+<title>WAVE Dispatch — welcome</title><style>
 body{margin:0;background:#0b0f14;color:#cfe3f7;font:15px/1.6 ui-monospace,Menlo,monospace;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:2rem}
 ::selection{background:#43d9ad;color:#0b0f14}
 .card{max-width:600px}.sub{color:#5b7287}.good{color:#43d9ad}a{color:#43d9ad}
@@ -424,7 +424,7 @@ export default {
       }
       if (path === "/docs") {                      // human docs / integration surfaces
         return new Response(shell("docs", `<h1>docs</h1>
-<p class="sub">Route any agent or script through wave Dispatch. Your keys + data stay on your infra.</p>
+<p class="sub">Route any agent or script through WAVE Dispatch. Your keys + data stay on your infra.</p>
 <div class="box"><div class="r"><span class="kk">classify</span> <span class="dim">POST</span> / <span class="dim">{"prompt":"…"}</span> + <span class="warn">Authorization: Bearer &lt;key&gt;</span></div>
 <div class="r"><span class="kk">returns</span> {route, probability, margin, decided_at, forward}</div>
 <div class="r"><span class="kk">Claude Code</span> ANTHROPIC_BASE_URL → local dispatch proxy</div>
@@ -434,11 +434,11 @@ export default {
 <p class="sub">machine-readable: <a href="/llms.txt">/llms.txt</a> · <a href="/transparency?format=json">/transparency.json</a></p>`),
           { headers: { "content-type": "text/html; charset=utf-8", ...SEC_HEADERS } });
       }
-      if (path === "/about") {                     // positioning / what wave Dispatch is (#74)
-        return new Response(shell("about", `<h1>about wave <span class="good">Dispatch</span></h1>
+      if (path === "/about") {                     // positioning / what WAVE Dispatch is (#74)
+        return new Response(shell("about", `<h1>about WAVE <span class="good">Dispatch</span></h1>
 <p class="sub">The cheapest capable model wins. We make sure it does.</p>
 <div class="box">
-<p>Most AI bills are paid sending <em>every</em> request to a frontier model — even the trivial ones. wave Dispatch is a serverless edge router that classifies each request and sends it to the cheapest model that can actually do the job: your local models first, your frontier model (Claude · GPT · Gemini) only when the work genuinely needs it.</p>
+<p>Most AI bills are paid sending <em>every</em> request to a frontier model — even the trivial ones. WAVE Dispatch is a serverless edge router that classifies each request and sends it to the cheapest model that can actually do the job: your local models first, your frontier model (Claude · GPT · Gemini) only when the work genuinely needs it.</p>
 <p><span class="acc">Your infra · your keys · your data.</span> We never see your inference — we return a routing decision. You bring the models (local + any frontier, BYOK); we orchestrate at the edge and bill only the decision.</p>
 <p><span class="acc">Safe by default, smarter over time.</span> A verify-gate catches weak local answers and escalates instead of shipping them — so local-first is reliable, not risky. We learn the best model for each kind of work, so your routing keeps getting cheaper and faster.</p></div>
 <div class="box"><div class="r"><span class="kk">for</span> agents + humans who want frontier quality without the frontier bill</div>
@@ -460,7 +460,7 @@ export default {
       }
       if (path === "/transparency") {              // trust contract — JSON for agents, HTML page for humans
         const m = {
-          service: "wave Dispatch", role: "routing decision only — control plane",
+          service: "WAVE Dispatch", role: "routing decision only — control plane",
           data_policy: {
             sees: "your prompt, truncated to 2000 chars, used ONLY to pick a model",
             logs: ["per-license daily request COUNT (use:<key>:<YYYYMMDD>)", "license metadata (plan/limit/email)"],

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""wave Dispatch — local-first proxy (`dispatch serve`). Speaks the OpenAI /v1/chat/completions wire
+"""WAVE Dispatch — local-first proxy (`dispatch serve`). Speaks the OpenAI /v1/chat/completions wire
 format, so ANY agent/SDK with a custom base URL routes through it (Codex, Cursor, Continue, aider, …).
 Stdlib only — no extra deps.
 
@@ -157,7 +157,7 @@ class _Handler(BaseHTTPRequestHandler):
 
 def serve():
     mode = "hosted classifier (licensed)" if LICENSE else "local heuristic (no license — trivial only)"
-    print(f"wave Dispatch proxy :{PORT}  decision={mode}")
+    print(f"WAVE Dispatch proxy :{PORT}  decision={mode}")
     print(f"  upstream={UPSTREAM}  local={OLLAMA} ({LOCAL_MODEL})")
     print(f"  point your agent:  OPENAI_BASE_URL=http://localhost:{PORT}/v1")
     ThreadingHTTPServer(("127.0.0.1", PORT), _Handler).serve_forever()
