@@ -1,0 +1,67 @@
+sdk/rust/Cargo.toml
+  s_3d91c26031a18a::t_8be5002015486c 5,18
+.coderabbit.yaml
+  s_3d91c26031a18a::t_5b24f3f1b1e1af 23-30,77-82,98-103
+.contracts-absent.json
+  s_3d91c26031a18a::t_89e38b2b33ea96 1-10
+.github/workflows/issue-ops-triage.yml
+  s_3d91c26031a18a::t_065f75914ccba7 14,19-20
+AGENTS.md
+  s_3d91c26031a18a::t_9f95a483876dde 19-59
+CHANGELOG.md
+  s_3d91c26031a18a::t_a259c8b2f4c5a1 8-25
+PERMISSIONS.md
+  s_3d91c26031a18a::t_e7f2b4dead9829 1-55
+README.md
+  s_3d91c26031a18a::t_55b2fc536a75ed 3,29
+edge-router/worker.ts
+  s_3d91c26031a18a::t_09c0b26cef0086 223,248-249,289,305,323,325,358,368,376,381,427,437-438,441,463
+sdk/README.md
+  s_3d91c26031a18a::t_2df5cf310372b8 1
+sdk/go/dispatch.go
+  s_3d91c26031a18a::t_e7943f1f75c490 1,15,18
+sdk/go/go.mod
+  s_3d91c26031a18a::t_d290cee8abdcb7 3
+sdk/js/README.md
+  s_3d91c26031a18a::t_dc5ff632f94462 3
+sdk/js/index.d.ts
+  s_3d91c26031a18a::t_bca8906fb42921 1,119
+sdk/js/index.js
+  s_3d91c26031a18a::t_32c14c331b6aec 1
+sdk/js/package.json
+  s_3d91c26031a18a::t_bd7d7f7a364e99 4
+sdk/python/README.md
+  s_3d91c26031a18a::t_1e8c4f75243af1 3
+sdk/python/pyproject.toml
+  s_3d91c26031a18a::t_35c179d84c6bdc 12
+sdk/python/wave_dispatch/__init__.py
+  s_3d91c26031a18a::t_4a5ccfb837d247 1,32
+sdk/python/wave_dispatch/cli.py
+  s_3d91c26031a18a::t_223f9cef733179 1,12
+sdk/python/wave_dispatch/proxy.py
+  s_3d91c26031a18a::t_757ac765290d7c 2,160
+sdk/ruby/lib/wave_dispatch.rb
+  s_3d91c26031a18a::t_cb55c30d3652da 1
+sdk/ruby/wave_dispatch.gemspec
+  s_3d91c26031a18a::t_bde16a5ae2b7b6 4
+sdk/rust/src/lib.rs
+  s_3d91c26031a18a::t_bddf66fa73f1aa 1
+threat-model.md
+  s_3d91c26031a18a::t_f471083edc19eb 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "9c5a43808da863e278375f3cc19c9b62cb835551",
+  "prompts": {},
+  "sessions": {
+    "s_3d91c26031a18a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-aa29fdac447a70aeb",
+        "model": "unknown"
+      },
+      "human_author": "Jake Fineman <jakefineman@gmail.com>"
+    }
+  }
+}
