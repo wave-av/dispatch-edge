@@ -1,0 +1,25 @@
+scripts/license-truth.selftest.mjs
+  s_418f585ff58cb5::t_026590da6b1c9d 1-121
+scripts/lib/license-truth.mjs
+  s_418f585ff58cb5::t_d0b4d312a4d987 1-148
+scripts/license-truth.mjs
+  s_418f585ff58cb5::t_33083389a7d902 1-143
+.github/workflows/license-truth.yml
+  s_418f585ff58cb5::t_58c60c8034de61 1-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "cea90346d1befa4a6d4c6f5ebe113bab6b94a32e",
+  "prompts": {},
+  "sessions": {
+    "s_418f585ff58cb5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e5b410ce-aa9a-48d6-be5d-09400395b1b6",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Jake Fineman <jakefineman@gmail.com>"
+    }
+  }
+}
