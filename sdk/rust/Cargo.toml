@@ -12,7 +12,7 @@ categories = ["api-bindings"]
 [dependencies]
 ureq = "2"
 serde_json = "1"
-base64 = "0.22"           # 0.5.1 — wallet_hook(privy) needs Basic auth encoding
+base64 = "0.23"           # 0.5.1 — wallet_hook(privy) needs Basic auth encoding
 urlencoding = "2"         # 0.5.1 — wallet_hook(privy) URL-encodes the wallet_id path segment
 p256 = { version = "0.13", features = ["pkcs8", "ecdsa"] }   # 0.6.2 — CDP-JWT (ES256) signing
 rand_core = "0.6.2"       # nonce randomness for CDP-JWT (floor raised: CVE-2021-27378, fixed 0.6.2)
