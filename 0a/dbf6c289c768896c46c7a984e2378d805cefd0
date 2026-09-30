@@ -1,0 +1,29 @@
+LICENSE
+  s_03717f3d6221c1::t_9ad1c5a7f5287c 189
+NOTICE
+  s_03717f3d6221c1::t_24748468dbe71b 2,4,8
+sdk/js/LICENSE
+  s_03717f3d6221c1::t_89b738c6a8b6ad 189
+sdk/python/LICENSE
+  s_03717f3d6221c1::t_486e7ad93fb92a 189
+sdk/ruby/LICENSE
+  s_03717f3d6221c1::t_0467af7a573d8d 189
+sdk/rust/LICENSE
+  s_03717f3d6221c1::t_6b4195c96e6c38 189
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "0adbf6c289c768896c46c7a984e2378d805cefd0",
+  "prompts": {},
+  "sessions": {
+    "s_03717f3d6221c1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-aed7c83d859fcf4ca",
+        "model": "unknown"
+      },
+      "human_author": "Jake Fineman <jakefineman@gmail.com>"
+    }
+  }
+}
