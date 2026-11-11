@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+
+- Foundation secret scan now prints only `file:line` on a match. Failed CI logs on this public
+  repository no longer include the matched credential material.
+
 ### Changed
 
 - **BREAKING for Go SDK consumers: the minimum Go version is now 1.25** (`sdk/go/go.mod`,
